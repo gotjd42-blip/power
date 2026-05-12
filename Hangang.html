@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>원료 재고 관리</title>
+<style>
+:root{
+  --green:#03c75a;--green2:#02b350;--gl:#e8f9ef;
+  --blue:#1e6ddd;--bl:#e8f0fb;
+  --red:#ff4444;--rl:#fff0f0;
+  --orange:#ff6b00;--ol:#fff4e8;
+  --g1:#f7f8fa;--g2:#eef0f3;--g3:#d9dde2;--g4:#9ea6b2;--g5:#666e7a;--g6:#333d4b;
+  --white:#fff;--shadow:0 1px 4px rgba(0,0,0,0.1);--r:10px;--rs:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:-apple-system,'Malgun Gothic','맑은 고딕',sans-serif;background:var(--g1);color:var(--g6);font-size:15px;}
+
+/* 로그인 */
+#login-screen{display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;background:var(--white);padding:24px;}
+.login-logo{font-size:32px;font-weight:800;color:var(--green);margin-bottom:6px;}
+.login-sub{font-size:14px;color:var(--g4);margin-bottom:40px;}
+.role-list{display:flex;flex-direction:column;gap:12px;width:100%;max-width:360px;}
+.role-btn{display:flex;align-items:center;gap:16px;background:var(--white);border:2px solid var(--g3);border-radius:var(--r);padding:18px 20px;cursor:pointer;transition:all 0.15s;}
+.role-btn:active{transform:scale(0.98);}
+.role-btn.tazza{border-color:var(--green);}
+.role-btn.ins{border-color:var(--blue);}
+.role-btn.lotto{border-color:var(--orange);}
+.role-icon{font-size:32px;flex-shrink:0;}
+.role-name{font-size:17px;font-weight:700;}
+.role-desc{font-size:13px;color:var(--g4);margin-top:2px;}
+
+/* 앱 */
+#app-screen{display:none;flex-direction:column;height:100vh;}
+#app-screen.visible{display:flex;}
+.app-header{height:56px;background:var(--white);border-bottom:1px solid var(--g2);display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0;}
+.hdr-left{display:flex;align-items:center;gap:8px;}
+.hdr-title{font-size:18px;font-weight:800;color:var(--g6);}
+.hdr-badge{font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;}
+.bt{background:var(--gl);color:var(--green2);}
+.bi{background:var(--bl);color:var(--blue);}
+.bo{background:var(--ol);color:var(--orange);}
+#sync-badge{font-size:11px;font-weight:600;display:none;}
+.hdr-back{font-size:13px;color:var(--g5);cursor:pointer;padding:7px 12px;border:1px solid var(--g3);border-radius:var(--rs);background:none;font-family:inherit;font-weight:500;}
+.app-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:76px;}
+.bottom-nav{height:62px;background:var(--white);border-top:1px solid var(--g2);display:flex;flex-shrink:0;}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;padding:8px 4px;border:none;background:none;color:var(--g4);font-family:inherit;transition:color 0.15s;}
+.nav-btn.active{color:var(--green);}
+.nav-icon{font-size:22px;line-height:1;}
+.nav-label{font-size:11px;font-weight:600;}
+
+/* 공통 레이아웃 */
+.page{padding:16px;}
+.card{background:var(--white);border-radius:var(--r);box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden;}
+.card-head{padding:16px 16px 0;display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-size:15px;font-weight:700;}
+.card-body{padding:14px 16px 16px;}
+.card-divider{height:1px;background:var(--g2);margin:12px 0;}
+.sec-title{font-size:14px;font-weight:700;color:var(--g5);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+
+/* 폼 */
+.form-row{display:flex;gap:10px;margin-bottom:12px;}
+.form-group{flex:1;display:flex;flex-direction:column;gap:6px;}
+.form-label{font-size:13px;font-weight:700;color:var(--g5);}
+.fi{border:1.5px solid var(--g3);border-radius:var(--rs);padding:12px 13px;font-size:15px;color:var(--g6);font-family:inherit;background:var(--white);outline:none;width:100%;transition:border-color 0.15s;}
+.fi:focus{border-color:var(--green);}
+.fi.u{padding-right:46px;}
+select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M0 0l6 8 6-8z' fill='%239ea6b2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:38px;}
+.iw{position:relative;}
+.ul{position:absolute;right:13px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--g4);font-weight:600;pointer-events:none;}
+
+/* 버튼 */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:var(--rs);padding:13px 18px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.15s;line-height:1;}
+.btn:active{transform:scale(0.97);}
+.bg{background:var(--green);color:#fff;}
+.bg:active{background:var(--green2);}
+.bo2{background:var(--white);color:var(--g6);border:1.5px solid var(--g3);}
+.bo2:active{background:var(--g1);}
+.br{background:var(--white);color:var(--red);border:1.5px solid #ffcccc;}
+.bb{background:var(--blue);color:#fff;}
+.bor{background:var(--orange);color:#fff;}
+.bsm{padding:8px 13px;font-size:13px;}
+.bfull{width:100%;}
+
+/* 배지 */
+.badge{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:20px;}
+.bok{background:var(--gl);color:var(--green2);}
+.bwarn{background:var(--ol);color:var(--orange);}
+.bdanger{background:var(--rl);color:var(--red);}
+.bblue{background:var(--bl);color:var(--blue);}
+.bgray{background:var(--g2);color:var(--g5);}
+
+/* 알림 */
+.alert{border-radius:var(--rs);padding:13px 14px;margin-bottom:12px;font-size:14px;display:flex;align-items:flex-start;gap:8px;line-height:1.5;}
+.aw{background:var(--ol);color:var(--orange);border:1px solid #ffd4a8;}
+.ai{background:var(--bl);color:var(--blue);border:1px solid #b3ccf5;}
+.ad{background:var(--rl);color:var(--red);border:1px solid #ffcccc;}
+
+/* 재고카드 */
+.stock-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.sc{background:var(--white);border-radius:var(--rs);box-shadow:var(--shadow);padding:10px 12px;position:relative;border-left:4px solid var(--g3);}
+.sc.ok-card{border-left-color:var(--green);}
+.sc.warn-card{border-left-color:var(--orange);}
+.sc.low-card{border-left-color:var(--red);}
+.sc-name{font-size:13px;font-weight:700;color:var(--g5);margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sc-stock{font-size:22px;font-weight:800;line-height:1.1;margin-bottom:3px;}
+.sc-stock.ok{color:var(--green);}
+.sc-stock.mid{color:var(--orange);}
+.sc-stock.low{color:var(--red);}
+.sc-today{font-size:12px;color:var(--g4);}
+.sc-today b{color:var(--g5);}
+.sn{text-align:center;flex:1;}
+.sn-l{font-size:11px;color:var(--g4);margin-bottom:3px;}
+.sn-v{font-size:17px;font-weight:800;}
+.sn-v.ok{color:var(--green);}
+.sn-v.low{color:var(--red);}
+.sn-v.mid{color:var(--orange);}
+.prog-bar{height:4px;background:var(--g2);border-radius:3px;overflow:hidden;margin-top:6px;}
+.pf{height:100%;border-radius:3px;background:var(--green);}
+.pf.warn{background:var(--orange);}
+.pf.danger{background:var(--red);}
+.prog-txt{font-size:11px;color:var(--g4);text-align:right;margin-top:3px;}
+.exp-badge{position:absolute;top:8px;right:8px;font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;}
+.exp-ok{background:var(--gl);color:var(--green2);}
+.exp-warn{background:var(--ol);color:var(--orange);}
+.exp-danger{background:var(--rl);color:var(--red);}
+
+/* 리스트 */
+.li{display:flex;align-items:center;gap:13px;padding:14px 16px;border-bottom:1px solid var(--g2);}
+.li:last-child{border-bottom:none;}
+.li:active{background:var(--g1);}
+.li-icon{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.ig{background:var(--gl);}
+.ib{background:var(--bl);}
+.io{background:var(--ol);}
+.ir{background:var(--rl);}
+.li-body{flex:1;min-width:0;}
+.li-title{font-size:15px;font-weight:600;}
+.li-sub{font-size:13px;color:var(--g4);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.li-right{text-align:right;flex-shrink:0;}
+.li-val{font-size:16px;font-weight:800;}
+
+/* 통계 */
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.stat-box{background:var(--white);border-radius:var(--r);box-shadow:var(--shadow);padding:14px;text-align:center;}
+.sl{font-size:12px;color:var(--g4);margin-bottom:5px;}
+.sv{font-size:22px;font-weight:800;}
+.sv.g{color:var(--green);}
+.sv.o{color:var(--orange);}
+.sv.r{color:var(--red);}
+
+/* 탭 */
+.inner-tabs{display:flex;background:var(--g1);border-radius:var(--r);padding:3px;margin-bottom:14px;}
+.it{flex:1;text-align:center;padding:10px;font-size:14px;font-weight:700;color:var(--g4);border-radius:8px;cursor:pointer;transition:all 0.15s;}
+.it.active{background:var(--white);color:var(--green);box-shadow:var(--shadow);}
+
+/* 수율 박스 */
+.ybox{background:var(--g1);border-radius:var(--rs);padding:14px;text-align:center;margin-bottom:12px;min-height:48px;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--g4);}
+.ybig{font-size:28px;font-weight:800;}
+
+/* 요청 아이템 */
+.ri{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--g2);}
+.ri:last-child{border-bottom:none;}
+
+/* 모달 */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:flex-end;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal-sheet{background:var(--white);border-radius:20px 20px 0 0;width:100%;max-width:500px;padding:20px 20px 40px;max-height:90vh;overflow-y:auto;animation:sU 0.25s ease;}
+@keyframes sU{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.mhandle{width:40px;height:4px;background:var(--g3);border-radius:2px;margin:0 auto 20px;}
+.mtitle{font-size:18px;font-weight:800;margin-bottom:18px;}
+
+/* 히스토리 타임라인 */
+.timeline{padding:0 16px;}
+.tl-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--g2);}
+.tl-item:last-child{border-bottom:none;}
+.tl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.tl-dot.in{background:var(--green);}
+.tl-dot.out{background:var(--blue);}
+.tl-dot.prod{background:var(--orange);}
+.tl-content{flex:1;}
+.tl-title{font-size:14px;font-weight:600;}
+.tl-sub{font-size:12px;color:var(--g4);margin-top:2px;}
+
+/* 현황판 */
+.dashboard-board{background:var(--white);border-radius:var(--r);box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden;}
+.db-header{padding:14px 16px;background:var(--g6);color:var(--white);display:flex;align-items:center;justify-content:space-between;}
+.db-title{font-size:15px;font-weight:700;}
+.db-time{font-size:12px;color:var(--g3);}
+.db-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1.2fr;border-bottom:1px solid var(--g2);}
+.db-row.header{background:var(--g1);}
+.db-row:last-child{border-bottom:none;}
+.db-cell{padding:10px 12px;font-size:13px;display:flex;align-items:center;}
+.db-row.header .db-cell{font-size:11px;font-weight:700;color:var(--g4);text-transform:uppercase;}
+.db-cell.danger{color:var(--red);font-weight:700;}
+.db-cell.warn{color:var(--orange);font-weight:700;}
+.db-cell.ok{color:var(--green);font-weight:700;}
+.exp-pill{font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap;}
+
+.mt4{margin-top:4px;}.mt8{margin-top:8px;}.mt12{margin-top:12px;}.mt16{margin-top:16px;}
+.mb8{margin-bottom:8px;}.mb12{margin-bottom:12px;}
+.flex{display:flex;}.fb{display:flex;align-items:center;justify-content:space-between;}
+.gap8{gap:8px;}.gap12{gap:12px;}
+.empty{text-align:center;padding:40px 20px;color:var(--g4);font-size:14px;}
+.ei{font-size:44px;margin-bottom:10px;}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-logo">📦 재고관리</div>
+  <div class="login-sub">역할을 선택하세요</div>
+  <div class="role-list">
+    <div class="role-btn tazza" onclick="tazzaLogin()">
+      <div class="role-icon">🏭</div>
+      <div><div class="role-name">타짜 동아리</div><div class="role-desc">입고·출고·현황판·모니터링</div></div>
+    </div>
+    <div class="role-btn ins" onclick="login('ins')">
+      <div class="role-icon">⚙️</div>
+      <div><div class="role-name">인소싱</div><div class="role-desc">원료 요청·생산 실적 입력</div></div>
+    </div>
+    <div class="role-btn lotto" onclick="login('lotto')">
+      <div class="role-icon">🎰</div>
+      <div><div class="role-name">동아리 로또</div><div class="role-desc">원료 요청·생산 실적 입력</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 타짜 로그인 모달 -->
+<div class="modal-bg" id="tazza-login-modal">
+  <div class="modal-sheet">
+    <div class="mhandle"></div>
+    <div class="mtitle">🏭 타짜 동아리 로그인</div>
+    <div class="form-group mb12">
+      <div class="form-label">아이디</div>
+      <input type="text" class="fi" id="tazza-id" placeholder="아이디 입력">
+    </div>
+    <div class="form-group mb12">
+      <div class="form-label">비밀번호</div>
+      <input type="password" class="fi" id="tazza-pw" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter')tazzaConfirm()">
+    </div>
+    <div id="tazza-login-err" style="font-size:13px;color:var(--red);min-height:18px;margin-bottom:12px;"></div>
+    <div class="flex gap8">
+      <button class="btn bo2 bfull" onclick="closeModal('tazza-login-modal')">취소</button>
+      <button class="btn bg bfull" onclick="tazzaConfirm()">로그인</button>
+    </div>
+  </div>
+</div>
+
+<div id="app-screen">
+  <div class="app-header">
+    <div class="hdr-left">
+      <div class="hdr-title" id="hdr-title">재고관리</div>
+      <span class="hdr-badge" id="hdr-badge"></span>
+      <span id="sync-badge"></span>
+    </div>
+    <button class="hdr-back" onclick="logout()">← 나가기</button>
+  </div>
+  <div class="app-body" id="app-body"></div>
+  <div class="bottom-nav" id="bottom-nav"></div>
+</div>
+
+<!-- 분할입고 모달 -->
+<div class="modal-bg" id="split-modal">
+  <div class="modal-sheet">
+    <div class="mhandle"></div>
+    <div class="mtitle" id="split-title">입고 처리</div>
+    <div id="split-info" style="background:var(--g1);border-radius:var(--rs);padding:13px;margin-bottom:16px;font-size:14px;color:var(--g5);line-height:1.7;"></div>
+    <div class="form-group mb12">
+      <div class="form-label">입고량 (KG)</div>
+      <div class="iw"><input type="number" class="fi u" id="split-qty" placeholder="0" min="0" step="0.01" oninput="splitCalc()"><span class="ul">KG</span></div>
+      <div id="split-warn" style="font-size:13px;color:var(--red);min-height:18px;margin-top:5px;"></div>
+    </div>
+    <div class="flex gap8 mb12">
+      <button class="btn bo2 bfull" id="s-btn-in" onclick="splitDo(false)">입고만</button>
+      <button class="btn bg bfull" id="s-btn-io" onclick="splitDo(true)">입고 + 출고</button>
+    </div>
+    <button class="btn bo2 bfull" onclick="closeModal('split-modal')">취소</button>
+  </div>
+</div>
+
+<script>
+var GAS_URL='https://script.google.com/macros/s/AKfycbw9dPnRZ4CYn0a-anAB9ipBd1DdsFsSmfh32ORTtWMQnOZ6x18flbZmFNyBLmJ8Gxqy/exec';
+var EXPIRY_DAYS=7; // 소비기한 기본 7일
+
+var DB={
+  materials:[],
+  tazza_incoming:[],   // {id,date,materialId,qty,note,expiryDate}
+  ins_dispatches:[],   // {id,date,materialId,qty,note,incomingId} ← FIFO용 입고ID 연결
+  ins_productions:[],
+  ins_products:[],
+  ins_requests:[],
+  lotto_dispatches:[],
+  lotto_productions:[],
+  lotto_products:[],
+  lotto_requests:[],
+  history:[],          // {id,date,type,materialId,wh,qty,note,ref}
+};
+
+// 새로 추가된 항목 추적용 큐
+var _saving=false;
+var _newItems={incoming:[],ins_prod:[],lotto_prod:[],requests:[],stock:[]};
+
+function buildStockData(){
+  return DB.materials.map(function(m){
+    var ts=getTazzaStock(m.id);
+    var is=getWhStock('ins',m.id);
+    var ls=getWhStock('lotto',m.id);
+    var fifo=getTazzaStockFIFO(m.id);
+    var earliest=fifo.length?fifo.sort(function(a,b){return a.expiryDate.localeCompare(b.expiryDate);})[0]:null;
+    var st=ts<=0&&is<=0&&ls<=0?'재고없음':earliest&&getExpiryStatus(earliest.expiryDate)==='expired'?'만료':earliest&&getExpiryStatus(earliest.expiryDate)==='danger'?'긴급':earliest&&getExpiryStatus(earliest.expiryDate)==='warn'?'임박':'정상';
+    return{name:m.name,tazza:parseFloat(ts.toFixed(2)),ins:parseFloat(is.toFixed(2)),lotto:parseFloat(ls.toFixed(2)),expiry:earliest?fd(earliest.expiryDate):'-',status:st};
+  });
+}
+
+function saveDB(){
+  localStorage.setItem('v6_backup',JSON.stringify(DB));
+  if(_saving)return;
+  _saving=true;
+  showSync('저장중..','orange');
+  // 재고현황 항상 포함
+  _newItems.stock=buildStockData();
+  var payload={action:'save',db:DB,newItems:_newItems};
+  fetch(GAS_URL,{method:'POST',body:JSON.stringify(payload)})
+  .then(function(r){return r.json();})
+  .then(function(res){
+    _saving=false;
+    if(res.ok){
+      showSync('저장완료','green');
+      // 전송 완료 후 큐 초기화
+      _newItems={incoming:[],ins_prod:[],lotto_prod:[],requests:[],stock:[]};
+    } else {
+      showSync('저장실패','red');
+    }
+    setTimeout(hideSync,2000);
+  }).catch(function(){
+    _saving=false;showSync('오프라인','gray');setTimeout(hideSync,3000);
+  });
+}
+function loadDB(cb){
+  showSync('불러오는중..','orange');
+  fetch(GAS_URL+'?action=load')
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(d&&typeof d==='object'&&d.materials){
+      Object.keys(d).forEach(function(k){if(DB.hasOwnProperty(k))DB[k]=d[k];});
+      localStorage.setItem('v6_backup',JSON.stringify(DB));
+      showSync('연동완료','green');
+    } else {
+      var bk=localStorage.getItem('v6_backup');
+      if(bk){var bd=JSON.parse(bk);Object.keys(bd).forEach(function(k){if(DB.hasOwnProperty(k))DB[k]=bd[k];});}
+      showSync('새 데이터','green');
+    }
+    setTimeout(hideSync,2000);if(cb)cb();
+  }).catch(function(){
+    var bk=localStorage.getItem('v6_backup');
+    if(bk){var bd=JSON.parse(bk);Object.keys(bd).forEach(function(k){if(DB.hasOwnProperty(k))DB[k]=bd[k];});}
+    showSync('오프라인(로컬)','gray');setTimeout(hideSync,3000);if(cb)cb();
+  });
+}
+function showSync(msg,c){
+  var el=document.getElementById('sync-badge');if(!el)return;
+  var cs={green:'var(--green)',orange:'var(--orange)',red:'var(--red)',gray:'var(--g4)'};
+  el.textContent=msg;el.style.color=cs[c]||cs.gray;el.style.display='inline-block';
+}
+function hideSync(){var el=document.getElementById('sync-badge');if(el)el.style.display='none';}
+
+function uid(){return 'id_'+Date.now()+'_'+Math.floor(Math.random()*1e6);}
+function today(){return new Date().toISOString().slice(0,10);}
+function fd(d){return d?d.replace(/-/g,'.'):'−';}
+function addDays(dateStr,n){var d=new Date(dateStr);d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
+function diffDays(a,b){return Math.ceil((new Date(a)-new Date(b))/(1000*60*60*24));}
+function getExpiryStatus(expiryDate){
+  var diff=diffDays(expiryDate,today());
+  if(diff<0)return'expired';
+  if(diff<=2)return'danger';
+  if(diff<=4)return'warn';
+  return'ok';
+}
+function getExpiryLabel(expiryDate){
+  var diff=diffDays(expiryDate,today());
+  if(diff<0)return'만료 '+Math.abs(diff)+'일 초과';
+  if(diff===0)return'오늘 만료';
+  return diff+'일 남음';
+}
+
+var ROLE=null,CUR_TAB=null;
+
+/* ── FIFO 재고 계산 ── */
+// 공용창고 재고를 입고 건별로 반환 (FIFO 순서)
+function getTazzaStockFIFO(mid){
+  var incoming=DB.tazza_incoming.filter(function(i){return i.materialId===mid;})
+    .slice().sort(function(a,b){return a.date.localeCompare(b.date);});
+  var usedByIns={}; var usedByLotto={};
+  DB.ins_dispatches.filter(function(d){return d.materialId===mid;}).forEach(function(d){
+    if(d.incomingId)usedByIns[d.incomingId]=(usedByIns[d.incomingId]||0)+d.qty;
+  });
+  DB.lotto_dispatches.filter(function(d){return d.materialId===mid;}).forEach(function(d){
+    if(d.incomingId)usedByLotto[d.incomingId]=(usedByLotto[d.incomingId]||0)+d.qty;
+  });
+  return incoming.map(function(i){
+    var used=(usedByIns[i.id]||0)+(usedByLotto[i.id]||0);
+    return{id:i.id,date:i.date,qty:i.qty,used:used,remain:Math.max(0,i.qty-used),expiryDate:i.expiryDate||addDays(i.date,EXPIRY_DAYS)};
+  }).filter(function(x){return x.remain>0;});
+}
+
+function getTazzaStock(mid){
+  return parseFloat(getTazzaStockFIFO(mid).reduce(function(s,x){return s+x.remain;},0).toFixed(3));
+}
+
+function getWhStock(wh,mid){
+  var d=DB[wh+'_dispatches'].reduce(function(s,x){return x.materialId===mid?s+x.qty:s;},0);
+  var p=DB[wh+'_productions'].filter(function(p){var dd=DB[wh+'_dispatches'].find(function(x){return x.id===p.dispatchId;});return dd&&dd.materialId===mid;}).reduce(function(s,p){return s+p.qty;},0);
+  return parseFloat((d-p).toFixed(3));
+}
+
+function getRemain(wh,d){
+  var p=DB[wh+'_productions'].filter(function(x){return x.dispatchId===d.id;}).reduce(function(s,x){return s+x.qty;},0);
+  return parseFloat((d.qty-p).toFixed(3));
+}
+
+// 소비기한 임박 원료 목록
+function getExpiringMaterials(){
+  var result=[];
+  DB.materials.forEach(function(m){
+    var fifo=getTazzaStockFIFO(m.id);
+    fifo.forEach(function(f){
+      var st=getExpiryStatus(f.expiryDate);
+      if(st==='expired'||st==='danger'||st==='warn'){
+        result.push({material:m,fifo:f,status:st});
+      }
+    });
+  });
+  return result;
+}
+
+function ystatus(v,mat){if(!mat)return'warn';if(v>=(mat.baseYield||100)*0.95)return'ok';if(v>=(mat.minYield||0))return'warn';return'danger';}
+function ylabel(s){return s==='ok'?'정상':s==='warn'?'주의':'경고';}
+function ycolor(s){return s==='ok'?'var(--green)':s==='warn'?'var(--orange)':'var(--red)';}
+
+/* ── 히스토리 기록 ── */
+function addHistory(type,materialId,wh,qty,note,ref){
+  DB.history.push({id:uid(),date:today(),time:new Date().toTimeString().slice(0,5),type:type,materialId:materialId,wh:wh||'',qty:qty,note:note||'',ref:ref||''});
+}
+
+/* ── 네비게이션 ── */
+var TNAV=[{id:'home',l:'재고현황',i:'📦'},{id:'board',l:'현황판',i:'📊'},{id:'requests',l:'요청서확인',i:'📋'},{id:'delivery',l:'전달현황',i:'🚚'},{id:'incoming',l:'생산원료',i:'📥'},{id:'materials',l:'품목관리',i:'🧪'}];
+var WNV=[{id:'home',l:'내창고',i:'🏠'},{id:'request',l:'요청서작성',i:'📝'},{id:'production',l:'생산등록',i:'⚙️'},{id:'history',l:'생산내역',i:'📋'},{id:'products',l:'제품목록',i:'🏷️'}];
+
+function tazzaLogin(){
+  document.getElementById('tazza-id').value='';
+  document.getElementById('tazza-pw').value='';
+  document.getElementById('tazza-login-err').textContent='';
+  openModal('tazza-login-modal');
+  setTimeout(function(){document.getElementById('tazza-id').focus();},300);
+}
+function tazzaConfirm(){
+  var id=document.getElementById('tazza-id').value.trim();
+  var pw=document.getElementById('tazza-pw').value.trim();
+  if(id==='xkwk123'&&pw==='xkwk123'){
+    closeModal('tazza-login-modal');
+    login('tazza');
+  } else {
+    document.getElementById('tazza-login-err').textContent='❌ 아이디 또는 비밀번호가 틀렸습니다.';
+    document.getElementById('tazza-pw').value='';
+    document.getElementById('tazza-pw').focus();
+  }
+}
+
+function login(role){
+  ROLE=role;
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app-screen').classList.add('visible');
+  var tit={tazza:'타짜 동아리',ins:'인소싱',lotto:'동아리 로또'};
+  var bc={tazza:'bt',ins:'bi',lotto:'bo'};
+  var bt={tazza:'관리자',ins:'인소싱',lotto:'로또'};
+  document.getElementById('hdr-title').textContent=tit[role];
+  var hb=document.getElementById('hdr-badge');hb.textContent=bt[role];hb.className='hdr-badge '+bc[role];
+  var tabs=role==='tazza'?TNAV:WNV;
+  document.getElementById('bottom-nav').innerHTML=tabs.map(function(t){
+    return '<button class="nav-btn" id="nb-'+t.id+'" onclick="goTab(\''+t.id+'\')">'
+      +'<div class="nav-icon">'+t.i+'</div><div class="nav-label">'+t.l+'</div></button>';
+  }).join('');
+  document.getElementById('app-body').innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:16px;"><div style="font-size:40px;">⏳</div><div style="font-size:16px;font-weight:700;color:var(--g5);">데이터 불러오는 중...</div></div>';
+  loadDB(function(){initFixedMaterials();goTab('home');});
+}
+function logout(){
+  ROLE=null;
+  Object.keys(DB).forEach(function(k){DB[k]=[];});
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('app-screen').classList.remove('visible');
+}
+function goTab(id){
+  document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
+  var nb=document.getElementById('nb-'+id);if(nb)nb.classList.add('active');
+  CUR_TAB=id;
+  var body=document.getElementById('app-body');
+  if(ROLE==='tazza'){
+    if(id==='home')body.innerHTML=tazzaHome();
+    else if(id==='board')body.innerHTML=tazzaBoard();
+    else if(id==='requests')body.innerHTML=tazzaRequests();
+    else if(id==='delivery')body.innerHTML=tazzaDelivery();
+    else if(id==='incoming')body.innerHTML=tazzaIncoming();
+    else if(id==='materials')body.innerHTML=tazzaMaterials();
+  } else {
+    if(id==='home')body.innerHTML=whHome();
+    else if(id==='request')body.innerHTML=whRequest();
+    else if(id==='production')body.innerHTML=whProduction();
+    else if(id==='history')body.innerHTML=whHistory();
+    else if(id==='products')body.innerHTML=whProducts();
+  }
+  body.scrollTop=0;
+}
+
+/* ══════════════════════════════════
+   타짜 홈
+══════════════════════════════════ */
+function tazzaHome(){
+  var ap=DB.ins_productions.concat(DB.lotto_productions);
+  var ay=ap.length?(ap.reduce(function(s,p){return s+p.actualYield;},0)/ap.length).toFixed(1):'-';
+  var pi=DB.ins_requests.filter(function(r){return r.status==='pending';}).length;
+  var pl=DB.lotto_requests.filter(function(r){return r.status==='pending';}).length;
+  var pt=pi+pl;
+  var expiring=getExpiringMaterials();
+  var h='<div class="page">';
+
+  // 소비기한 임박 알림
+  expiring.forEach(function(e){
+    var st=e.status;
+    var cls=st==='expired'?'ad':st==='danger'?'ad':'aw';
+    var icon=st==='expired'?'🚨':st==='danger'?'⚠️':'⏰';
+    h+='<div class="alert '+cls+'">'+icon+' <strong>'+e.material.name+'</strong> '+e.fifo.remain.toFixed(1)+'KG — '+getExpiryLabel(e.fifo.expiryDate)+'</div>';
+  });
+
+  h+='<div class="stat-row">'
+    +'<div class="stat-box"><div class="sl">대기 요청</div><div class="sv '+(pt>0?'o':'g')+'">'+pt+'건</div></div>'
+    +'<div class="stat-box"><div class="sl">평균 수율</div><div class="sv '+(ay!=='-'&&parseFloat(ay)<80?'r':ay!=='-'&&parseFloat(ay)<90?'o':'g')+'">'+ay+(ay!=='-'?'%':'')+'</div></div>'
+    +'<div class="stat-box"><div class="sl">만료임박</div><div class="sv '+(expiring.length>0?'r':'g')+'">'+expiring.length+'건</div></div>'
+    +'</div>';
+
+  h+='<div class="sec-title">⚙️ 인소싱 창고</div><div class="stock-grid">';
+  DB.materials.forEach(function(m){h+=sCard(m,'ins');});
+  h+='</div><div class="sec-title" style="margin-top:4px;">🎰 로또 창고</div><div class="stock-grid">';
+  DB.materials.forEach(function(m){h+=sCard(m,'lotto');});
+  h+='</div>';
+
+  // 최근 실적
+  var rows=[];
+  DB.ins_productions.forEach(function(p){rows.push({p:p,wh:'ins'});});
+  DB.lotto_productions.forEach(function(p){rows.push({p:p,wh:'lotto'});});
+  rows.sort(function(a,b){return b.p.date.localeCompare(a.p.date);});
+  h+='<div class="sec-title" style="margin-top:4px;">📊 최근 생산</div><div class="card">';
+  if(!rows.length)h+='<div class="empty"><div class="ei">📊</div>실적 없음</div>';
+  else rows.slice(0,8).forEach(function(r){
+    var p=r.p,wh=r.wh;
+    var d=DB[wh+'_dispatches'].find(function(x){return x.id===p.dispatchId;});
+    var mat=d?DB.materials.find(function(m){return m.id===d.materialId;}):null;
+    var st=ystatus(p.actualYield,mat);
+    h+='<div class="li"><div class="li-icon '+(wh==='ins'?'ib':'io')+'">'+(wh==='ins'?'⚙️':'🎰')+'</div>'
+      +'<div class="li-body"><div class="li-title">'+(p.productName||mat&&mat.name||'?')+'</div>'
+      +'<div class="li-sub">'+fd(p.date)+' · '+(mat?mat.name:'?')+' · 투입 '+(p.inputQty||p.qty).toFixed(1)+'KG</div></div>'
+      +'<div class="li-right"><div class="li-val" style="color:'+ycolor(st)+'">'+p.actualYield+'%</div>'
+      +'<span class="badge bok" style="background:'+ycolor(st)+'20;color:'+ycolor(st)+'">'+ylabel(st)+'</span></div></div>';
+  });
+  h+='</div></div>';
+  return h;
+}
+
+function fmtKg(v){
+  // 소수점 불필요하면 제거
+  var r=parseFloat(v.toFixed(2));
+  return r%1===0?r.toFixed(0):r.toFixed(1);
+}
+
+function sCard(m,wh){
+  var s=getWhStock(wh,m.id);
+  // 오늘 사용량 = 오늘 날짜의 생산 투입량
+  var td=today();
+  var todayUsed=DB[wh+'_productions'].filter(function(p){return p.date===td;})
+    .reduce(function(acc,p){
+      var d=DB[wh+'_dispatches'].find(function(x){return x.id===p.dispatchId;});
+      return d&&d.materialId===m.id?acc+(p.inputQty||p.qty):acc;
+    },0);
+  var t=DB[wh+'_dispatches'].reduce(function(acc,d){return d.materialId===m.id?acc+d.qty:acc;},0);
+  var cls=s<=0?'low':s<t*0.2?'mid':'ok';
+  var cardCls=s<=0?'low-card':s<t*0.2?'warn-card':'ok-card';
+  var pct=t>0?Math.min(100,Math.round(s/t*100)):0;
+  var pc=pct>=50?'':pct<=10?'danger':'warn';
+  return '<div class="sc '+cardCls+'">'
+    +'<div class="sc-name">'+m.name+'</div>'
+    +'<div class="sc-stock '+cls+'">'+fmtKg(s)+'<span style="font-size:13px;font-weight:600;"> KG</span></div>'
+    +'<div class="sc-today">오늘사용 <b>'+fmtKg(todayUsed)+'KG</b></div>'
+    +'<div class="prog-bar"><div class="pf '+pc+'" style="width:'+pct+'%"></div></div>'
+    +'</div>';
+}
+
+/* ══════════════════════════════════
+   타짜: 전달 현황 (요청 대비 전달량)
+══════════════════════════════════ */
+function tazzaDelivery(){
+  var h='<div class="page">';
+  h+='<div class="inner-tabs">'
+    +'<div class="it active" id="dv-ins" onclick="dvtab(\'ins\')">⚙️ 인소싱</div>'
+    +'<div class="it" id="dv-lotto" onclick="dvtab(\'lotto\')">🎰 로또</div>'
+    +'</div>';
+  h+='<div id="dvv-ins">'+deliveryView('ins')+'</div>';
+  h+='<div id="dvv-lotto" style="display:none;">'+deliveryView('lotto')+'</div>';
+  h+='</div>';
+  return h;
+}
+
+function deliveryView(wh){
+  var reqs=DB[wh+'_requests'];
+  if(!reqs.length) return '<div class="empty"><div class="ei">📋</div>요청 내역 없음</div>';
+
+  var h='';
+  // 원료별 요청 vs 전달 집계
+  var summary={};
+  reqs.forEach(function(r){
+    r.items.forEach(function(item){
+      if(!summary[item.materialId]){
+        var mat=DB.materials.find(function(m){return m.id===item.materialId;});
+        summary[item.materialId]={name:mat?mat.name:item.name,requested:0,delivered:0,pending:0};
+      }
+      summary[item.materialId].requested+=item.qty;
+      summary[item.materialId].delivered+=(item.incomedQty||0);
+    });
+  });
+  Object.keys(summary).forEach(function(mid){
+    var s=summary[mid];
+    s.pending=parseFloat((s.requested-s.delivered).toFixed(2));
+  });
+
+  // 요약 카드
+  var totalReq=Object.values(summary).reduce(function(a,s){return a+s.requested;},0);
+  var totalDel=Object.values(summary).reduce(function(a,s){return a+s.delivered;},0);
+  var totalPend=Object.values(summary).reduce(function(a,s){return a+s.pending;},0);
+  h+='<div class="stat-row">'
+    +'<div class="stat-box"><div class="sl">총 요청량</div><div class="sv">'+fmtKg(totalReq)+'KG</div></div>'
+    +'<div class="stat-box"><div class="sl">전달완료</div><div class="sv g">'+fmtKg(totalDel)+'KG</div></div>'
+    +'<div class="stat-box"><div class="sl">미전달</div><div class="sv '+(totalPend>0?'r':'g')+'">'+fmtKg(totalPend)+'KG</div></div>'
+    +'</div>';
+
+  // 원료별 상세
+  h+='<div class="sec-title">원료별 전달 현황</div><div class="card">';
+  Object.keys(summary).forEach(function(mid){
+    var s=summary[mid];
+    var pct=s.requested>0?Math.min(100,Math.round(s.delivered/s.requested*100)):0;
+    var done=s.pending<=0.001;
+    var pc=pct>=100?'':pct>=50?'warn':'danger';
+    h+='<div style="padding:14px 16px;border-bottom:1px solid var(--g2);">'
+      +'<div class="fb mb8">'
+        +'<div style="font-size:15px;font-weight:700;">'+s.name+'</div>'
+        +'<span class="badge '+(done?'bok':'bwarn')+'">'+(done?'완료':'미전달 '+fmtKg(s.pending)+'KG')+'</span>'
+      +'</div>'
+      +'<div style="font-size:13px;color:var(--g4);margin-bottom:8px;">'
+        +'요청 <b style="color:var(--g6)">'+fmtKg(s.requested)+'KG</b> &nbsp;→&nbsp; '
+        +'전달 <b style="color:var(--green)">'+fmtKg(s.delivered)+'KG</b>'
+      +'</div>'
+      +'<div class="prog-bar"><div class="pf '+pc+'" style="width:'+pct+'%"></div></div>'
+      +'<div class="prog-txt">'+pct+'% 전달완료</div>'
+      +'</div>';
+  });
+  h+='</div>';
+
+  // 요청서별 상세
+  h+='<div class="sec-title" style="margin-top:8px;">요청서별 상세</div>';
+  reqs.slice().sort(function(a,b){return b.date.localeCompare(a.date);}).forEach(function(r){
+    var done=r.status==='done';
+    var allDone=r.items.every(function(i){return (i.incomedQty||0)>=i.qty-0.001;});
+    h+='<div class="card" style="margin-bottom:10px;">'
+      +'<div class="card-head"><div class="card-title">'+fd(r.date)+(r.memo?' · <span style="font-size:13px;color:var(--g4);">'+r.memo+'</span>':'')+'</div>'
+      +'<span class="badge '+(allDone?'bok':'bwarn')+'">'+(allDone?'완료':'처리중')+'</span></div>'
+      +'<div class="card-body">';
+    r.items.forEach(function(item){
+      var del=item.incomedQty||0;
+      var pend=item.qty-del;
+      var pct=Math.min(100,Math.round(del/item.qty*100));
+      var pc=pct>=100?'':pct>=50?'warn':'danger';
+      h+='<div style="margin-bottom:10px;">'
+        +'<div class="fb mb4">'
+          +'<span style="font-size:14px;font-weight:600;">'+item.name+'</span>'
+          +'<span style="font-size:13px;color:var(--g4);">'+fmtKg(del)+' / '+fmtKg(item.qty)+' KG</span>'
+        +'</div>'
+        +'<div class="prog-bar"><div class="pf '+pc+'" style="width:'+pct+'%"></div></div>'
+        +'<div class="prog-txt">'+(pend>0?'미전달 <b style="color:var(--red)">'+fmtKg(pend)+'KG</b>':'<b style="color:var(--green)">전달완료</b>')+'</div>'
+        +'</div>';
+    });
+    h+='</div></div>';
+  });
+  return h;
+}
+
+function dvtab(wh){
+  document.getElementById('dv-ins').className='it'+(wh==='ins'?' active':'');
+  document.getElementById('dv-lotto').className='it'+(wh==='lotto'?' active':'');
+  document.getElementById('dvv-ins').style.display=wh==='ins'?'block':'none';
+  document.getElementById('dvv-lotto').style.display=wh==='lotto'?'block':'none';
+}
+
+/* ══════════════════════════════════
+   타짜 현황판
+══════════════════════════════════ */
+function tazzaBoard(){
+  var h='<div class="page">';
+  var now=new Date().toLocaleString('ko-KR');
+
+  h+='<div class="dashboard-board">'
+    +'<div class="db-header"><div class="db-title">📊 실시간 재고 현황판</div><div class="db-time">'+now+'</div></div>'
+    // 헤더 행
+    +'<div class="db-row header">'
+      +'<div class="db-cell">원료명</div>'
+      +'<div class="db-cell">공용창고</div>'
+      +'<div class="db-cell">인소싱</div>'
+      +'<div class="db-cell">로또</div>'
+      +'<div class="db-cell">소비기한</div>'
+      +'<div class="db-cell">상태</div>'
+    +'</div>';
+
+  DB.materials.forEach(function(m){
+    var ts=getTazzaStock(m.id);
+    var is=getWhStock('ins',m.id);
+    var ls=getWhStock('lotto',m.id);
+    // 가장 임박한 소비기한
+    var fifo=getTazzaStockFIFO(m.id);
+    var earliest=fifo.length?fifo.sort(function(a,b){return a.expiryDate.localeCompare(b.expiryDate);})[0]:null;
+    var expSt=earliest?getExpiryStatus(earliest.expiryDate):'ok';
+    var expLabel=earliest?getExpiryLabel(earliest.expiryDate):'-';
+    var expColor=expSt==='expired'||expSt==='danger'?'var(--red)':expSt==='warn'?'var(--orange)':'var(--green)';
+
+    var statusText=ts<=0&&is<=0&&ls<=0?'재고없음':expSt==='expired'?'만료':expSt==='danger'?'긴급':expSt==='warn'?'임박':'정상';
+    var statusCls=expSt==='expired'||expSt==='danger'?'danger':expSt==='warn'?'warn':'ok';
+
+    h+='<div class="db-row">'
+      +'<div class="db-cell" style="font-weight:700;">'+m.name+'</div>'
+      +'<div class="db-cell '+(ts<=0?'danger':ts<10?'warn':'ok')+'">'+fmtKg(ts)+' KG</div>'
+      +'<div class="db-cell '+(is<=0?'danger':is<5?'warn':'ok')+'">'+fmtKg(is)+' KG</div>'
+      +'<div class="db-cell '+(ls<=0?'danger':ls<5?'warn':'ok')+'">'+fmtKg(ls)+' KG</div>'
+      +'<div class="db-cell"><span class="exp-pill" style="background:'+expColor+'20;color:'+expColor+'">'+expLabel+'</span></div>'
+      +'<div class="db-cell '+statusCls+'">'+statusText+'</div>'
+    +'</div>';
+  });
+  h+='</div>';
+
+  // 소비기한 임박 상세
+  var expiring=getExpiringMaterials();
+  if(expiring.length){
+    h+='<div class="sec-title">⚠️ 소비기한 주의 목록</div><div class="card">';
+    expiring.forEach(function(e){
+      var st=e.status;
+      var icon=st==='expired'?'🚨':st==='danger'?'⚠️':'⏰';
+      var cls=st==='expired'||st==='danger'?'ir':'io';
+      h+='<div class="li"><div class="li-icon '+cls+'">'+icon+'</div>'
+        +'<div class="li-body">'
+          +'<div class="li-title">'+e.material.name+'</div>'
+          +'<div class="li-sub">입고일 '+fd(e.fifo.date)+' · 소비기한 '+fd(e.fifo.expiryDate)+'</div>'
+        +'</div>'
+        +'<div class="li-right">'
+          +'<div class="li-val" style="color:'+(st==='expired'||st==='danger'?'var(--red)':'var(--orange)')+'">'+e.fifo.remain.toFixed(1)+'KG</div>'
+          +'<div style="font-size:12px;color:'+(st==='expired'||st==='danger'?'var(--red)':'var(--orange)')+'">'+getExpiryLabel(e.fifo.expiryDate)+'</div>'
+        +'</div></div>';
+    });
+    h+='</div>';
+  }
+
+  // 새로고침 버튼
+  h+='<button class="btn bo2 bfull mt8" onclick="goTab(\'board\')">🔄 새로고침</button>';
+  h+='</div>';
+  return h;
+}
+
+/* ══════════════════════════════════
+   타짜 요청 확인
+══════════════════════════════════ */
+function tazzaRequests(){
+  var ip=DB.ins_requests.filter(function(r){return r.status==='pending';});
+  var id2=DB.ins_requests.filter(function(r){return r.status==='done';});
+  var lp=DB.lotto_requests.filter(function(r){return r.status==='pending';});
+  var ld=DB.lotto_requests.filter(function(r){return r.status==='done';});
+  var h='<div class="page">';
+  h+='<div class="inner-tabs">'
+    +'<div class="it active" id="it-ins" onclick="itab(\'ins\')">⚙️ 인소싱 '+(ip.length?'<span style="background:var(--orange);color:#fff;border-radius:10px;font-size:11px;padding:1px 6px;margin-left:3px;">'+ip.length+'</span>':'')+'</div>'
+    +'<div class="it" id="it-lotto" onclick="itab(\'lotto\')">🎰 로또 '+(lp.length?'<span style="background:var(--orange);color:#fff;border-radius:10px;font-size:11px;padding:1px 6px;margin-left:3px;">'+lp.length+'</span>':'')+'</div>'
+    +'</div>';
+  h+='<div id="iv-ins">'+reqView(ip,id2,'ins')+'</div>';
+  h+='<div id="iv-lotto" style="display:none;">'+reqView(lp,ld,'lotto')+'</div>';
+  h+='</div>';
+  return h;
+}
+function itab(wh){
+  document.getElementById('it-ins').className='it'+(wh==='ins'?' active':'');
+  document.getElementById('it-lotto').className='it'+(wh==='lotto'?' active':'');
+  document.getElementById('iv-ins').style.display=wh==='ins'?'block':'none';
+  document.getElementById('iv-lotto').style.display=wh==='lotto'?'block':'none';
+}
+function reqView(pen,don,wh){
+  var h='<div style="display:flex;gap:8px;margin-bottom:14px;">'
+    +'<button class="btn bsm bfull bo2" id="st-'+wh+'-p" onclick="stab(\''+wh+'\',\'p\')" style="border-color:var(--orange);color:var(--orange);">대기중 ('+pen.length+')</button>'
+    +'<button class="btn bsm bfull bo2" id="st-'+wh+'-d" onclick="stab(\''+wh+'\',\'d\')">완료 ('+don.length+')</button>'
+    +'</div>';
+  h+='<div id="sv-'+wh+'-p">';
+  if(!pen.length)h+='<div class="empty"><div class="ei">✅</div>대기중 없음</div>';
+  else pen.forEach(function(r){
+    h+='<div class="card" style="margin-bottom:12px;">';
+    h+='<div class="card-head"><div class="card-title">'+fd(r.date)+'</div></div>';
+    if(r.memo)h+='<div style="padding:4px 16px 0;font-size:13px;color:var(--g4);">💬 '+r.memo+'</div>';
+    h+='<div class="card-body">';
+    r.items.forEach(function(item,idx){
+      var al=item.incomedQty||0,rm=item.qty-al,dn=rm<=0.001;
+      // 공용창고 현재 재고 표시
+      var mat=DB.materials.find(function(m){return m.materialId===item.materialId||m.name===item.name;});
+      var curStock=getTazzaStock(item.materialId);
+      h+='<div style="background:var(--g1);border-radius:var(--rs);padding:13px;margin-bottom:8px;">'
+        +'<div class="fb mb8"><div style="font-size:16px;font-weight:700;">'+item.name+'</div>'
+        +'<span class="badge '+(dn?'bok':'bwarn')+'">'+(dn?'완료':al.toFixed(1)+'/'+item.qty.toFixed(1)+'KG')+'</span></div>'
+        +'<div style="font-size:12px;color:var(--g4);margin-bottom:8px;">공용창고 현재: <strong style="color:'+(curStock>=rm?'var(--green)':'var(--red)')+'">'+curStock.toFixed(1)+'KG</strong></div>';
+      if(!dn){
+        h+='<div class="form-group mb8">'
+          +'<div class="form-label">입고량 (최대 '+rm.toFixed(2)+'KG)</div>'
+          +'<div class="iw"><input type="number" class="fi u" id="sq-'+r.id+'-'+idx+'" placeholder="0" max="'+rm.toFixed(2)+'" step="0.01"><span class="ul">KG</span></div>'
+          +'</div>'
+          +'<div class="flex gap8">'
+          +'<button class="btn bo2 bfull bsm" onclick="openSplit(\''+r.id+'\',\''+wh+'\','+idx+')">입고</button>'
+          +'<button class="btn bg bfull bsm" onclick="openSplit(\''+r.id+'\',\''+wh+'\','+idx+',true)">입고+출고</button>'
+          +'</div>';
+      }
+      h+='</div>';
+    });
+    var ad=r.items.every(function(i){return (i.incomedQty||0)>=i.qty-0.001;});
+    if(ad)h+='<button class="btn bg bfull" onclick="closeReq(\''+r.id+'\',\''+wh+'\')">✓ 완료 처리</button>';
+    h+='</div></div>';
+  });
+  h+='</div><div id="sv-'+wh+'-d" style="display:none;">';
+  if(!don.length)h+='<div class="empty"><div class="ei">📋</div>완료 없음</div>';
+  else don.slice().sort(function(a,b){return b.date.localeCompare(a.date);}).forEach(function(r){
+    var is=r.items.map(function(i){return i.name+' '+i.qty.toFixed(1)+'KG';}).join(', ');
+    h+='<div class="card"><div class="li"><div class="li-icon ig">✅</div>'
+      +'<div class="li-body"><div class="li-title">'+fd(r.date)+'</div><div class="li-sub">'+is+'</div></div>'
+      +'<span class="badge bok">완료</span></div></div>';
+  });
+  h+='</div>';
+  return h;
+}
+function stab(wh,t){
+  document.getElementById('sv-'+wh+'-p').style.display=t==='p'?'block':'none';
+  document.getElementById('sv-'+wh+'-d').style.display=t==='d'?'block':'none';
+  document.getElementById('st-'+wh+'-p').style.cssText=t==='p'?'border-color:var(--green);color:var(--green);flex:1':'flex:1';
+  document.getElementById('st-'+wh+'-d').style.cssText=t==='d'?'border-color:var(--green);color:var(--green);flex:1':'flex:1';
+}
+
+var _sRid,_sWh,_sIdx;
+function openSplit(rid,wh,idx,io){
+  _sRid=rid;_sWh=wh;_sIdx=idx;
+  var req=DB[wh+'_requests'].find(function(r){return r.id===rid;});
+  var item=req.items[idx];
+  var al=item.incomedQty||0,rm=item.qty-al;
+  document.getElementById('split-title').textContent=(io?'입고+출고':'입고')+' — '+item.name;
+  document.getElementById('split-info').innerHTML='요청량: <strong>'+item.qty.toFixed(2)+'KG</strong> | 기입고: <strong>'+al.toFixed(2)+'KG</strong><br>처리가능: <strong style="color:var(--orange)">'+rm.toFixed(2)+'KG</strong>';
+  var sqEl=document.getElementById('sq-'+rid+'-'+idx);
+  document.getElementById('split-qty').value=sqEl?sqEl.value:'';
+  document.getElementById('split-warn').textContent='';
+  document.getElementById('s-btn-in').className='btn '+(io?'bo2':'bg')+' bfull';
+  document.getElementById('s-btn-io').className='btn '+(io?'bg':'bo2')+' bfull';
+  openModal('split-modal');
+}
+function splitCalc(){
+  var qty=parseFloat(document.getElementById('split-qty').value)||0;
+  var req=DB[_sWh+'_requests'].find(function(r){return r.id===_sRid;});
+  var item=req.items[_sIdx];
+  var rm=item.qty-(item.incomedQty||0);
+  document.getElementById('split-warn').textContent=qty>rm?'⚠ 잔량('+rm.toFixed(2)+'KG) 초과':'';
+}
+function splitDo(withOut){
+  var qty=parseFloat(document.getElementById('split-qty').value)||0;
+  var req=DB[_sWh+'_requests'].find(function(r){return r.id===_sRid;});
+  var item=req.items[_sIdx];
+  var rm=item.qty-(item.incomedQty||0);
+  if(!qty){alert('입고량을 입력하세요');return;}
+  if(qty>rm+0.001){alert('잔량 초과!');return;}
+  var wl=_sWh==='ins'?'인소싱':'로또';
+  var expiryDate=addDays(today(),EXPIRY_DAYS);
+  var mat=DB.materials.find(function(m){return m.id===item.materialId;});
+  // FIFO: 입고 등록
+  var inId=uid();
+  DB.tazza_incoming.push({id:inId,date:today(),materialId:item.materialId,qty:qty,note:'['+wl+'] 요청입고',expiryDate:expiryDate});
+  addHistory('in',item.materialId,'tazza',qty,'['+wl+'] 요청입고',inId);
+  _newItems.incoming.push({date:today(),matName:mat?mat.name:'?',qty:qty,expiryDate:expiryDate,note:'['+wl+'] 요청입고'});
+  if(withOut){
+    // FIFO: 입고ID 연결해서 출고
+    var outId=uid();
+    DB[_sWh+'_dispatches'].push({id:outId,date:today(),materialId:item.materialId,qty:qty,note:'요청출고',incomingId:inId});
+    addHistory('out',item.materialId,_sWh,qty,'요청출고',outId);
+  }
+  item.incomedQty=(item.incomedQty||0)+qty;
+  saveDB();closeModal('split-modal');goTab('requests');
+  alert((withOut?'입고+출고':'입고')+'완료!\n'+item.name+' '+qty.toFixed(2)+'KG → '+wl);
+}
+function closeReq(rid,wh){
+  var req=DB[wh+'_requests'].find(function(r){return r.id===rid;});
+  if(!req||!confirm('완료 처리?'))return;
+  req.status='done';saveDB();goTab('requests');
+}
+
+/* ══════════════════════════════════
+   타짜 입고
+══════════════════════════════════ */
+function tazzaIncoming(){
+  var h='<div class="page"><div class="card"><div class="card-head"><div class="card-title">📥 원료 입고 등록</div></div><div class="card-body">';
+  h+='<div class="form-row"><div class="form-group"><div class="form-label">원료</div>'+mSel('in-mat',false)+'</div></div>';
+  h+='<div class="form-row">'
+    +'<div class="form-group"><div class="form-label">입고량</div><div class="iw"><input type="number" class="fi u" id="in-qty" placeholder="0" min="0" step="0.01"><span class="ul">KG</span></div></div>'
+    +'<div class="form-group"><div class="form-label">입고일</div><input type="date" class="fi" id="in-dt" value="'+today()+'"></div>'
+    +'</div>';
+  h+='<div class="form-row"><div class="form-group"><div class="form-label">소비기한 (자동 +7일)</div><input type="date" class="fi" id="in-exp" value="'+addDays(today(),EXPIRY_DAYS)+'"></div></div>';
+  h+='<div class="form-row"><div class="form-group"><div class="form-label">비고</div><input type="text" class="fi" id="in-note" placeholder="납품처 등"></div></div>';
+  h+='<button class="btn bg bfull mt8" onclick="addIncoming()">+ 입고 등록</button></div></div>';
+
+  h+='<div class="sec-title">입고 내역 (FIFO 순서)</div><div class="card">';
+  var s=DB.tazza_incoming.slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+  if(!s.length)h+='<div class="empty"><div class="ei">📥</div>입고 내역 없음</div>';
+  else s.forEach(function(i){
+    var m=DB.materials.find(function(x){return x.id===i.materialId;});
+    var exp=i.expiryDate||addDays(i.date,EXPIRY_DAYS);
+    var st=getExpiryStatus(exp);
+    var ec=st==='expired'||st==='danger'?'var(--red)':st==='warn'?'var(--orange)':'var(--green)';
+    h+='<div class="li"><div class="li-icon ig">📥</div>'
+      +'<div class="li-body"><div class="li-title">'+(m?m.name:'?')+'</div>'
+      +'<div class="li-sub">입고 '+fd(i.date)+' · 소비기한 <span style="color:'+ec+'">'+fd(exp)+'</span>'+(i.note?' · '+i.note:'')+'</div></div>'
+      +'<div class="li-right"><div class="li-val">'+i.qty.toFixed(2)+'<span style="font-size:13px;color:var(--g4)"> KG</span></div>'
+      +'<span class="badge" style="background:'+ec+'20;color:'+ec+'">'+getExpiryLabel(exp)+'</span>'
+      +'<br><button class="btn br bsm mt4" onclick="del(\'tazza_incoming\',\''+i.id+'\',\'incoming\')">삭제</button></div></div>';
+  });
+  h+='</div></div>';
+  return h;
+}
+function addIncoming(){
+  var mid=document.getElementById('in-mat').value;
+  var qty=parseFloat(document.getElementById('in-qty').value)||0;
+  var dt=document.getElementById('in-dt').value||today();
+  var exp=document.getElementById('in-exp').value||addDays(dt,EXPIRY_DAYS);
+  var note=document.getElementById('in-note').value.trim();
+  if(!mid||!qty){alert('원료와 입고량을 입력하세요');return;}
+  var inId=uid();
+  var mat=DB.materials.find(function(m){return m.id===mid;});
+  DB.tazza_incoming.push({id:inId,date:dt,materialId:mid,qty:qty,note:note,expiryDate:exp});
+  addHistory('in',mid,'tazza',qty,note,inId);
+  _newItems.incoming.push({date:dt,matName:mat?mat.name:'?',qty:qty,expiryDate:exp,note:note});
+  saveDB();goTab('incoming');
+}
+
+/* ══════════════════════════════════
+   타짜 원료 관리
+══════════════════════════════════ */
+function tazzaMaterials(){
+  var h='<div class="page"><div class="card"><div class="card-head"><div class="card-title">🧪 원료 추가</div></div><div class="card-body">';
+  h+='<div class="form-row"><div class="form-group"><div class="form-label">원료명</div><input type="text" class="fi" id="m-nm" placeholder="예: 원료A"></div></div>';
+  h+='<div class="form-row">'
+    +'<div class="form-group"><div class="form-label">기준 수율 (%)</div><input type="number" class="fi" id="m-y" placeholder="90"></div>'
+    +'<div class="form-group"><div class="form-label">최소 허용 (%)</div><input type="number" class="fi" id="m-mn" placeholder="80"></div>'
+    +'</div>';
+  h+='<button class="btn bg bfull mt8" onclick="addMat()">+ 원료 추가</button></div></div>';
+  h+='<div class="sec-title">등록 원료</div><div class="card">';
+  if(!DB.materials.length)h+='<div class="empty"><div class="ei">🧪</div>원료 없음</div>';
+  else DB.materials.forEach(function(m){
+    var ts=getTazzaStock(m.id),is=getWhStock('ins',m.id),ls=getWhStock('lotto',m.id);
+    h+='<div class="li"><div class="li-icon ig">🧪</div>'
+      +'<div class="li-body"><div class="li-title">'+m.name+(m.fixed?' <span class="badge bok" style="font-size:10px;">기본</span>':'')+'</div>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:5px;">'
+        +'<span class="badge bgray">공용 '+ts.toFixed(1)+'KG</span>'
+        +'<span class="badge bblue">인소싱 '+is.toFixed(1)+'KG</span>'
+        +'<span class="badge bwarn">로또 '+ls.toFixed(1)+'KG</span>'
+      +'</div></div>'
+      +(m.fixed?'<span style="font-size:12px;color:var(--g4);">고정</span>'
+        :'<button class="btn br bsm" onclick="del(\'materials\',\''+m.id+'\',\'materials\')">삭제</button>')
+      +'</div>';
+  });
+  h+='</div></div>';
+  return h;
+}
+function addMat(){
+  var nm=document.getElementById('m-nm').value.trim();
+  if(!nm){alert('원료명을 입력하세요');return;}
+  if(DB.materials.find(function(m){return m.name===nm;})){alert('이미 등록됨');return;}
+  DB.materials.push({id:uid(),name:nm,baseYield:parseFloat(document.getElementById('m-y').value)||0,minYield:parseFloat(document.getElementById('m-mn').value)||0});
+  saveDB();goTab('materials');
+}
+
+/* ══════════════════════════════════
+   창고 홈 (인소싱/로또)
+══════════════════════════════════ */
+function whHome(){
+  var wh=ROLE,wl=wh==='ins'?'인소싱':'로또';
+  var pn=DB[wh+'_requests'].filter(function(r){return r.status==='pending';}).length;
+  var h='<div class="page">';
+  if(pn>0)h+='<div class="alert ai">📬 대기중인 요청 '+pn+'건 — 타짜 처리 예정</div>';
+  h+='<div class="sec-title">'+wl+' 창고 재고</div><div class="stock-grid">';
+  if(!DB.materials.length)h+='<div style="grid-column:1/-1" class="empty"><div class="ei">📦</div>원료 없음</div>';
+  else DB.materials.forEach(function(m){h+=sCard(m,wh);});
+  h+='</div><div class="sec-title" style="margin-top:4px;">진행 현황</div><div class="card">';
+  var ds=DB[wh+'_dispatches'];
+  if(!ds.length)h+='<div class="empty"><div class="ei">📊</div>출고 내역 없음</div>';
+  else ds.slice().sort(function(a,b){return b.date.localeCompare(a.date);}).forEach(function(d){
+    var m=DB.materials.find(function(x){return x.id===d.materialId;});
+    var rm=getRemain(wh,d),pr=parseFloat((d.qty-rm).toFixed(2));
+    var pct=Math.min(100,Math.round(pr/d.qty*100)),dn=rm<=0.001;
+    var pc=pct>=95?'':pct<=20?'danger':'warn';
+    h+='<div class="li"><div class="li-icon '+(dn?'ig':'ib')+'">'+(dn?'✅':'📦')+'</div>'
+      +'<div class="li-body" style="flex:1"><div class="li-title">'+(m?m.name:'?')+'</div>'
+      +'<div class="li-sub">'+fd(d.date)+' · 출고 '+d.qty.toFixed(1)+'KG</div>'
+      +'<div class="prog-bar" style="margin-top:8px;"><div class="pf '+pc+'" style="width:'+pct+'%"></div></div>'
+      +'<div class="prog-txt">'+pr.toFixed(1)+' / '+d.qty.toFixed(1)+' KG ('+pct+'%)'+(dn?' <b style="color:var(--green)">완료</b>':'')+'</div>'
+      +'</div></div>';
+  });
+  h+='</div></div>';return h;
+}
+
+/* ══════════════════════════════════
+   창고 요청
+══════════════════════════════════ */
+var _ri=[];
+function whRequest(){
+  var wh=ROLE,rk=wh+'_requests';
+  var h='<div class="page"><div class="card"><div class="card-head"><div class="card-title">📝 원료 요청 작성</div></div><div class="card-body">';
+  h+='<div class="form-row">'
+    +'<div class="form-group"><div class="form-label">원료</div>'+mSel('rq-mat',false)+'</div>'
+    +'<div class="form-group"><div class="form-label">요청량</div><div class="iw"><input type="number" class="fi u" id="rq-qty" placeholder="0" min="0" step="0.01"><span class="ul">KG</span></div></div>'
+    +'</div>';
+  h+='<button class="btn bo2 bfull" onclick="addRI()">+ 항목 추가</button>';
+  if(_ri.length){
+    h+='<div class="card-divider"></div><div class="sec-title" style="margin-bottom:8px;">추가 목록</div>';
+    _ri.forEach(function(r,i){
+      h+='<div class="ri"><div style="flex:1"><div style="font-size:15px;font-weight:700;">'+r.name+'</div><div style="font-size:13px;color:var(--g4);">'+r.qty.toFixed(2)+' KG</div></div>'
+        +'<button class="btn br bsm" onclick="rmRI('+i+')">✕</button></div>';
+    });
+    h+='<div class="form-group mt12"><div class="form-label">메모 (선택)</div><input type="text" class="fi" id="rq-memo" placeholder="긴급, 납기일 등"></div>';
+    h+='<button class="btn bg bfull mt12" onclick="subReq()">✉ 요청서 제출</button>';
+  }
+  h+='</div></div>';
+  h+='<div class="sec-title">요청 내역</div><div class="card">';
+  var rs=DB[rk].slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+  if(!rs.length)h+='<div class="empty"><div class="ei">📝</div>요청 없음</div>';
+  else rs.forEach(function(r){
+    var is=r.items.map(function(x){return x.name+' '+x.qty.toFixed(1)+'KG';}).join(', ');
+    var dn=r.status==='done';
+    h+='<div class="li"><div class="li-icon '+(dn?'ig':'io')+'">'+(dn?'✅':'📋')+'</div>'
+      +'<div class="li-body"><div class="li-title">'+fd(r.date)+(r.memo?' · '+r.memo:'')+'</div><div class="li-sub">'+is+'</div></div>'
+      +'<div class="li-right"><span class="badge '+(dn?'bok':'bwarn')+'">'+(dn?'완료':'대기')+'</span>'
+      +(dn?'':'<br><button class="btn br bsm mt4" onclick="delReq(\''+r.id+'\')">삭제</button>')+'</div></div>';
+  });
+  h+='</div></div>';return h;
+}
+function addRI(){
+  var mid=document.getElementById('rq-mat').value,qty=parseFloat(document.getElementById('rq-qty').value)||0;
+  if(!mid){alert('원료를 선택하세요');return;}if(!qty){alert('요청량을 입력하세요');return;}
+  var m=DB.materials.find(function(x){return x.id===mid;});
+  var ex=_ri.find(function(r){return r.materialId===mid;});
+  if(ex)ex.qty+=qty;else _ri.push({materialId:mid,name:m?m.name:'?',qty:qty});
+  document.getElementById('rq-qty').value='';document.getElementById('rq-mat').value='';
+  goTab('request');
+}
+function rmRI(i){_ri.splice(i,1);goTab('request');}
+function subReq(){
+  if(!_ri.length){alert('원료를 추가하세요');return;}
+  var memo=document.getElementById('rq-memo')?document.getElementById('rq-memo').value.trim():'';
+  var wh=ROLE;
+  DB[wh+'_requests'].push({id:uid(),date:today(),items:_ri.slice(),memo:memo,status:'pending'});
+  // 요청 큐에 항목별로 추가
+  _ri.forEach(function(r){
+    _newItems.requests.push({date:today(),wh:wh==='ins'?'인소싱':'로또',matName:r.name,qty:r.qty,memo:memo,status:'대기중'});
+  });
+  saveDB();_ri=[];alert('요청서 제출!\n타짜에서 확인 후 입고 처리됩니다.');goTab('request');
+}
+function delReq(rid){
+  if(!confirm('삭제?'))return;
+  DB[ROLE+'_requests']=DB[ROLE+'_requests'].filter(function(r){return r.id!==rid;});
+  saveDB();goTab('request');
+}
+
+/* ══════════════════════════════════
+   창고 생산 실적 입력 (폼만)
+══════════════════════════════════ */
+function whProduction(){
+  var wh=ROLE;
+  var av=DB[wh+'_dispatches'].filter(function(d){return getRemain(wh,d)>0.001;});
+  var pk=wh+'_products';
+  var h='<div class="page"><div class="card"><div class="card-head"><div class="card-title">⚙️ 생산 실적 등록</div></div><div class="card-body">';
+  h+='<div class="alert ai mb12">ℹ 내 창고 원료만 사용 가능합니다</div>';
+  h+='<div class="form-row">'
+    +'<div class="form-group"><div class="form-label">날짜</div><input type="date" class="fi" id="p-dt" value="'+today()+'"></div>'
+    +'<div class="form-group"><div class="form-label">출고 건 (원료)</div><select class="fi" id="p-disp" onchange="onDC()">'
+    +'<option value="">선택</option>'
+    +av.map(function(d){var m=DB.materials.find(function(x){return x.id===d.materialId;});return'<option value="'+d.id+'">'+(m?m.name:'?')+' — 잔량 '+fmtKg(getRemain(wh,d))+'KG</option>';}).join('')
+    +'</select></div></div>';
+  h+='<div id="d-info" class="ybox mb8" style="font-size:14px;">출고 건을 선택하세요</div>';
+  h+='<div class="form-row">'
+    +'<div class="form-group"><div class="form-label">제품명 *</div>'
+    +'<select class="fi" id="p-product" onchange="onProdChange()">'
+    +'<option value="">제품 선택</option>'
+    +DB[pk].map(function(p){return'<option value="'+p.id+'" data-w="'+p.weight+'">'+p.name+' ('+p.weight.toFixed(0)+'g)</option>';}).join('')
+    +'</select></div>'
+    +'<div class="form-group"><div class="form-label">직접입력</div>'
+    +'<input type="text" class="fi" id="p-prodname" placeholder="직접입력 시"></div>'
+    +'</div>';
+  h+='<div class="form-row">'
+    +'<div class="form-group"><div class="form-label">제품 g수 *</div><div class="iw"><input type="number" class="fi u" id="p-gram" placeholder="500" min="0" step="0.1" oninput="calcBagW()"><span class="ul">g</span></div></div>'
+    +'<div class="form-group"><div class="form-label">원료 사용량 (KG) *</div><div class="iw"><input type="number" class="fi u" id="p-input" placeholder="0" min="0" step="0.01" oninput="calcY()"><span class="ul">KG</span></div></div>'
+    +'</div>';
+  h+='<div class="form-row">'
+    +'<div class="form-group"><div class="form-label">봉 생산량 *</div><div class="iw"><input type="number" class="fi u" id="p-bags" placeholder="0" min="0" oninput="calcBagW()"><span class="ul">봉</span></div></div>'
+    +'<div class="form-group"><div class="form-label">완성품 KG (자동)</div><div class="iw"><input type="number" class="fi u" id="p-qty" placeholder="자동" min="0" step="0.01" oninput="calcY()"><span class="ul">KG</span></div></div>'
+    +'</div>';
+  h+='<div id="bag-info" style="font-size:13px;color:var(--g4);margin-bottom:10px;min-height:18px;"></div>';
+  h+='<div id="y-prev" class="ybox mb12">원료 사용량 입력 시 수율 자동 계산</div>';
+  h+='<div class="form-row"><div class="form-group"><div class="form-label">비고</div><input type="text" class="fi" id="p-note" placeholder="특이사항"></div></div>';
+  h+='<button class="btn bg bfull" onclick="addProd()">+ 실적 등록</button></div></div>';
+  h+='</div>';
+  return h;
+}
+function onDC(){
+  var wh=ROLE,did=document.getElementById('p-disp').value,el=document.getElementById('d-info');
+  if(!did){el.textContent='출고 건을 선택하세요';return;}
+  var d=DB[wh+'_dispatches'].find(function(x){return x.id===did;});
+  var rm=getRemain(wh,d),pr=parseFloat((d.qty-rm).toFixed(2));
+  el.innerHTML='출고 <b>'+d.qty.toFixed(2)+'KG</b> | 완료 <b>'+pr+'KG</b> | <b style="color:var(--orange)">잔량 '+rm.toFixed(2)+'KG</b>';
+}
+function onProdChange(){
+  var sel=document.getElementById('p-product');
+  var opt=sel.options[sel.selectedIndex];
+  if(opt&&opt.value){
+    document.getElementById('p-prodname').value='';
+    var w=parseFloat(opt.getAttribute('data-w'))||0;
+    if(w){document.getElementById('p-gram').value=w.toFixed(1);calcBagW();}
+  }
+}
+function calcBagW(){
+  var bags=parseInt(document.getElementById('p-bags').value)||0;
+  var gram=parseFloat(document.getElementById('p-gram').value)||0;
+  var info=document.getElementById('bag-info');
+  if(bags>0&&gram>0){
+    var kg=(bags*gram/1000);
+    document.getElementById('p-qty').value=kg.toFixed(3);
+    info.textContent=bags+'봉 × '+gram+'g = '+kg.toFixed(3)+' KG (자동입력)';
+    calcY();
+  }else{info.textContent='';}
+}
+function calcY(){
+  var wh=ROLE,did=document.getElementById('p-disp').value;
+  var iq=parseFloat(document.getElementById('p-input').value)||0;
+  var pq=parseFloat(document.getElementById('p-qty').value)||0;
+  var el=document.getElementById('y-prev');
+  if(!did||!iq){el.textContent='투입량 입력 시 수율 자동 계산';return;}
+  var d=DB[wh+'_dispatches'].find(function(x){return x.id===did;});
+  var rm=getRemain(wh,d);
+  if(iq>rm+0.001){el.innerHTML='<span style="color:var(--red)">⚠ 투입량이 잔량('+rm.toFixed(2)+'KG) 초과</span>';return;}
+  var useQ=pq>0?pq:iq;
+  var y=(useQ/iq*100).toFixed(1);
+  var mat=DB.materials.find(function(x){return x.id===d.materialId;}),st=ystatus(parseFloat(y),mat);
+  el.innerHTML='수율 <span class="ybig" style="color:'+ycolor(st)+'">'+y+'%</span> &nbsp;<span class="badge" style="background:'+ycolor(st)+'20;color:'+ycolor(st)+'">'+ylabel(st)+'</span>';
+}
+function addProd(){
+  var wh=ROLE,dt=document.getElementById('p-dt').value||today();
+  var did=document.getElementById('p-disp').value;
+  var iq=parseFloat(document.getElementById('p-input').value)||0;
+  var qty=parseFloat(document.getElementById('p-qty').value)||0;
+  var bags=parseInt(document.getElementById('p-bags').value)||0;
+  var gram=parseFloat(document.getElementById('p-gram').value)||0;
+  var note=document.getElementById('p-note').value.trim();
+  var sel=document.getElementById('p-product');
+  var pname=sel.value?sel.options[sel.selectedIndex].text.replace(/\s*\(\d+g\)$/,''):document.getElementById('p-prodname').value.trim();
+  if(!did){alert('출고 건을 선택하세요');return;}
+  if(!iq){alert('투입량을 입력하세요');return;}
+  if(!pname){alert('제품명을 입력하세요');return;}
+  if(!gram){alert('제품 g수를 입력하세요');return;}
+  if(!bags){alert('봉 생산량을 입력하세요');return;}
+  var d=DB[wh+'_dispatches'].find(function(x){return x.id===did;});
+  var rm=getRemain(wh,d);
+  if(iq>rm+0.001){alert('투입량 초과!\n사용 가능: '+rm.toFixed(2)+'KG');return;}
+  var fq=qty>0?qty:(bags*gram/1000);
+  var ay=parseFloat((fq/iq*100).toFixed(2));
+  var mat=DB.materials.find(function(m){return m.id===d.materialId;});
+  var st=ystatus(ay,mat);
+  DB[wh+'_productions'].push({id:uid(),date:dt,dispatchId:did,productName:pname,gram:gram,inputQty:iq,qty:fq,bags:bags,actualYield:ay,note:note});
+  addHistory('prod',d.materialId,wh,iq,pname,did);
+  var prodItem={date:dt,productName:pname,gram:gram,matName:mat?mat.name:'?',inputQty:iq,qty:fq,bags:bags,actualYield:ay,status:ylabel(st),note:note};
+  if(wh==='ins') _newItems.ins_prod.push(prodItem);
+  else _newItems.lotto_prod.push(prodItem);
+  saveDB();goTab('production');
+}
+function expXl(){
+  var wh=ROLE;
+  var rows=[['날짜','제품명','g수','원료','투입량(KG)','생산량(KG)','봉수','수율(%)','상태','비고']];
+  DB[wh+'_productions'].slice().sort(function(a,b){return b.date.localeCompare(a.date);}).forEach(function(p){
+    var d=DB[wh+'_dispatches'].find(function(x){return x.id===p.dispatchId;});
+    var m=d?DB.materials.find(function(x){return x.id===d.materialId;}):null;
+    var st=ystatus(p.actualYield,m);
+    rows.push([p.date,p.productName||'',p.gram||'',m?m.name:'?',(p.inputQty||p.qty).toFixed(2),p.qty.toFixed(2),p.bags||0,p.actualYield,ylabel(st),p.note||'']);
+  });
+  var csv='\uFEFF'+rows.map(function(r){return r.map(function(c){return'"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\r\n');
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download='생산실적_'+today()+'.csv';a.click();
+}
+
+/* ══════════════════════════════════
+   창고 생산 내역 + 히스토리
+══════════════════════════════════ */
+function whHistory(){
+  var wh=ROLE;
+  var h='<div class="page">';
+
+  // 상단 서브탭
+  h+='<div class="inner-tabs">'
+    +'<div class="it active" id="ht-prod" onclick="htab(\'prod\')">📋 생산 내역</div>'
+    +'<div class="it" id="ht-hist" onclick="htab(\'hist\')">📅 일자별 내역</div>'
+    +'</div>';
+
+  // ── 생산 내역 ──
+  h+='<div id="hv-prod">';
+  h+='<div class="sec-title">생산 실적 내역 <button class="btn bo2 bsm" onclick="expXl()">↓ 엑셀</button></div>';
+  var ps=DB[wh+'_productions'].slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+  if(!ps.length){
+    h+='<div class="empty"><div class="ei">⚙️</div>생산 실적 없음</div>';
+  } else {
+    h+='<div class="card">';
+    ps.forEach(function(p){
+      var d=DB[wh+'_dispatches'].find(function(x){return x.id===p.dispatchId;});
+      var m=d?DB.materials.find(function(x){return x.id===d.materialId;}):null;
+      var st=ystatus(p.actualYield,m);
+      h+='<div class="li"><div class="li-icon ib">⚙️</div>'
+        +'<div class="li-body">'
+          +'<div class="li-title">'+(p.productName||'-')+(p.gram?' <span style="font-size:12px;color:var(--g4);">('+p.gram+'g)</span>':'')+'</div>'
+          +'<div class="li-sub">'+fd(p.date)+' · '+(m?m.name:'?')+' · 원료사용 '+fmtKg(p.inputQty||p.qty)+'KG · '+p.bags+'봉 · 완성 '+fmtKg(p.qty)+'KG</div>'
+        +'</div>'
+        +'<div class="li-right">'
+          +'<div class="li-val" style="color:'+ycolor(st)+'">'+p.actualYield+'%</div>'
+          +'<span class="badge" style="background:'+ycolor(st)+'20;color:'+ycolor(st)+'">'+ylabel(st)+'</span><br>'
+          +'<button class="btn br bsm mt4" onclick="del(\''+wh+'_productions\',\''+p.id+'\',\'history\')">삭제</button>'
+        +'</div></div>';
+    });
+    h+='</div>';
+  }
+  h+='</div>';
+
+  // ── 일자별 히스토리 ──
+  h+='<div id="hv-hist" style="display:none;">';
+  h+='<div class="sec-title">📅 일자별 원료 사용 내역</div>';
+  var myHist=DB.history.filter(function(x){return x.wh===wh||x.wh==='tazza';})
+    .slice().sort(function(a,b){return b.date.localeCompare(a.date)||(b.time||'').localeCompare(a.time||'');});
+  if(!myHist.length){
+    h+='<div class="empty"><div class="ei">📅</div>내역 없음</div>';
+  } else {
+    var grouped={};
+    myHist.forEach(function(x){if(!grouped[x.date])grouped[x.date]=[];grouped[x.date].push(x);});
+    Object.keys(grouped).sort(function(a,b){return b.localeCompare(a);}).forEach(function(date){
+      h+='<div class="sec-title" style="margin-top:8px;font-size:13px;">'+fd(date)+'</div>';
+      h+='<div class="card"><div class="timeline">';
+      grouped[date].forEach(function(x){
+        var mat=DB.materials.find(function(m){return m.id===x.materialId;});
+        var tl=x.type==='in'?'입고':x.type==='out'?'출고':'생산투입';
+        var tc=x.type==='in'?'in':x.type==='out'?'out':'prod';
+        var ic=x.type==='in'?'📥':x.type==='out'?'📤':'⚙️';
+        h+='<div class="tl-item"><div class="tl-dot '+tc+'"></div>'
+          +'<div class="tl-content">'
+            +'<div class="tl-title">'+ic+' '+tl+' — '+(mat?mat.name:'?')+' '+fmtKg(x.qty)+'KG</div>'
+            +'<div class="tl-sub">'+(x.time||'')+' · '+(x.note||'-')+'</div>'
+          +'</div></div>';
+      });
+      h+='</div></div>';
+    });
+  }
+  h+='</div>';
+  h+='</div>';
+  return h;
+}
+
+function htab(t){
+  document.getElementById('ht-prod').className='it'+(t==='prod'?' active':'');
+  document.getElementById('ht-hist').className='it'+(t==='hist'?' active':'');
+  document.getElementById('hv-prod').style.display=t==='prod'?'block':'none';
+  document.getElementById('hv-hist').style.display=t==='hist'?'block':'none';
+}
+
+/* ══════════════════════════════════
+   창고 제품 관리
+══════════════════════════════════ */
+function whProducts(){
+  var wh=ROLE,pk=wh+'_products',wl=wh==='ins'?'인소싱':'로또';
+  var h='<div class="page"><div class="card"><div class="card-head"><div class="card-title">📦 제품 추가</div></div><div class="card-body">';
+  h+='<div class="form-row">'
+    +'<div class="form-group"><div class="form-label">제품명 *</div><input type="text" class="fi" id="pr-nm" placeholder="예: 제품A"></div>'
+    +'<div class="form-group"><div class="form-label">중량 (g) *</div><div class="iw"><input type="number" class="fi u" id="pr-wt" placeholder="500" min="0" step="0.1"><span class="ul">g</span></div></div>'
+    +'</div>';
+  h+='<div class="form-row">'
+    +'<div class="form-group"><div class="form-label">연결 원료</div>'+mSel('pr-mat',true)+'</div>'
+    +'<div class="form-group"><div class="form-label">비고</div><input type="text" class="fi" id="pr-note" placeholder="규격 등"></div>'
+    +'</div>';
+  h+='<button class="btn bg bfull mt8" onclick="addPr()">+ 제품 추가</button></div></div>';
+  h+='<div class="sec-title">'+wl+' 제품 목록</div><div class="card">';
+  if(!DB[pk].length)h+='<div class="empty"><div class="ei">📦</div>제품 없음</div>';
+  else DB[pk].forEach(function(p){
+    var m=p.materialId?DB.materials.find(function(x){return x.id===p.materialId;}):null;
+    h+='<div class="li"><div class="li-icon ib">📦</div>'
+      +'<div class="li-body"><div class="li-title">'+p.name+'</div><div class="li-sub">'+p.weight.toFixed(1)+'g'+(m?' · '+m.name:'')+(p.note?' · '+p.note:'')+'</div></div>'
+      +'<button class="btn br bsm" onclick="del(\''+pk+'\',\''+p.id+'\',\'products\')">삭제</button></div>';
+  });
+  h+='</div></div>';return h;
+}
+function addPr(){
+  var wh=ROLE,nm=document.getElementById('pr-nm').value.trim(),wt=parseFloat(document.getElementById('pr-wt').value)||0;
+  if(!nm||!wt){alert('제품명과 중량을 입력하세요');return;}
+  var pk=wh+'_products';
+  if(DB[pk].find(function(p){return p.name===nm;})){alert('이미 등록됨');return;}
+  DB[pk].push({id:uid(),name:nm,weight:wt,materialId:document.getElementById('pr-mat').value||null,note:document.getElementById('pr-note').value.trim()});
+  saveDB();goTab('products');
+}
+
+/* ══════════════════════════════════
+   공통 유틸
+══════════════════════════════════ */
+function mSel(id,opt){
+  return '<select class="fi" id="'+id+'">'
+    +(opt?'<option value="">선택 안함</option>':'<option value="">원료 선택</option>')
+    +DB.materials.map(function(m){return'<option value="'+m.id+'">'+m.name+'</option>';}).join('')
+    +'</select>';
+}
+function del(key,id,tab){
+  if(key==='materials'){var m=DB.materials.find(function(x){return x.id===id;});if(m&&m.fixed){alert('기본 원료는 삭제 불가');return;}}
+  if(!confirm('삭제?'))return;
+  DB[key]=DB[key].filter(function(x){return x.id!==id;});
+  saveDB();goTab(tab);
+}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-bg').forEach(function(el){
+  el.addEventListener('click',function(e){if(e.target===el)el.classList.remove('open');});
+});
+
+// 고정 원료 자동 등록
+var FIXED=['날개','통다리','가슴살','안심','통날개','윙','봉','통정육','북채','사이정육'];
+function initFixedMaterials(){
+  var ch=false;
+  FIXED.forEach(function(nm){
+    if(!DB.materials.find(function(m){return m.name===nm;})){
+      DB.materials.push({id:uid(),name:nm,baseYield:0,minYield:0,fixed:true});ch=true;
+    }
+  });
+  if(ch)saveDB();
+}
+</script>
+</body>
+</html>
