@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>원료 재고 관리</title>
+<style>
+:root {
+  --green:#03c75a; --green2:#02b350; --green-light:#e8f9ef;
+  --blue:#1e6ddd; --blue-light:#e8f0fb;
+  --red:#ff4444; --red-light:#fff0f0;
+  --orange:#ff6b00; --orange-light:#fff4e8;
+  --gray1:#f7f8fa; --gray2:#eef0f3; --gray3:#d9dde2;
+  --gray4:#9ea6b2; --gray5:#666e7a; --gray6:#333d4b;
+  --white:#ffffff; --shadow:0 1px 4px rgba(0,0,0,0.1);
+  --radius:10px; --radius-sm:6px;
+  --header-h:56px; --bottom-h:62px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:-apple-system,'Malgun Gothic','맑은 고딕',sans-serif;background:var(--gray1);color:var(--gray6);font-size:15px;}
+
+#login-screen{display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;background:var(--white);padding:24px;}
+.login-logo{font-size:32px;font-weight:800;color:var(--green);margin-bottom:6px;letter-spacing:-0.5px;}
+.login-sub{font-size:14px;color:var(--gray4);margin-bottom:40px;}
+.role-list{display:flex;flex-direction:column;gap:12px;width:100%;max-width:360px;}
+.role-btn{display:flex;align-items:center;gap:16px;background:var(--white);border:2px solid var(--gray3);border-radius:var(--radius);padding:18px 20px;cursor:pointer;transition:all 0.15s;}
+.role-btn:active{transform:scale(0.98);}
+.role-btn.tazza{border-color:var(--green);}
+.role-btn.ins{border-color:var(--blue);}
+.role-btn.lotto{border-color:var(--orange);}
+.role-icon{font-size:32px;flex-shrink:0;}
+.role-name{font-size:17px;font-weight:700;color:var(--gray6);}
+.role-desc{font-size:13px;color:var(--gray4);margin-top:2px;}
+
+#app-screen{display:none;flex-direction:column;height:100vh;}
+#app-screen.visible{display:flex;}
+
+.app-header{height:var(--header-h);background:var(--white);border-bottom:1px solid var(--gray2);display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0;}
+.header-title{font-size:18px;font-weight:800;color:var(--gray6);}
+.header-badge{font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;margin-left:6px;}
+.badge-tazza{background:var(--green-light);color:var(--green2);}
+.badge-ins{background:var(--blue-light);color:var(--blue);}
+.badge-lotto{background:var(--orange-light);color:var(--orange);}
+.header-back{font-size:13px;color:var(--gray5);cursor:pointer;padding:7px 12px;border:1px solid var(--gray3);border-radius:var(--radius-sm);background:none;font-family:inherit;font-weight:500;}
+
+.app-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--bottom-h)+16px);}
+
+.bottom-nav{height:var(--bottom-h);background:var(--white);border-top:1px solid var(--gray2);display:flex;flex-shrink:0;}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;padding:8px 4px;border:none;background:none;color:var(--gray4);font-family:inherit;transition:color 0.15s;}
+.nav-btn.active{color:var(--green);}
+.nav-icon{font-size:22px;line-height:1;}
+.nav-label{font-size:11px;font-weight:600;}
+
+.page{padding:16px;}
+
+.card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden;}
+.card-head{padding:16px 16px 0;display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-size:15px;font-weight:700;color:var(--gray6);}
+.card-body{padding:14px 16px 16px;}
+.card-divider{height:1px;background:var(--gray2);margin:12px 0;}
+
+.form-row{display:flex;gap:10px;margin-bottom:12px;}
+.form-group{flex:1;display:flex;flex-direction:column;gap:6px;}
+.form-label{font-size:13px;font-weight:700;color:var(--gray5);}
+.form-input{border:1.5px solid var(--gray3);border-radius:var(--radius-sm);padding:12px 13px;font-size:15px;color:var(--gray6);font-family:inherit;background:var(--white);outline:none;width:100%;transition:border-color 0.15s;}
+.form-input:focus{border-color:var(--green);}
+.form-input.has-unit{padding-right:46px;}
+select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M0 0l6 8 6-8z' fill='%239ea6b2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:38px;}
+.input-wrap{position:relative;}
+.unit-label{position:absolute;right:13px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--gray4);font-weight:600;pointer-events:none;}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:var(--radius-sm);padding:13px 18px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.15s;line-height:1;}
+.btn:active{transform:scale(0.97);}
+.btn-green{background:var(--green);color:#fff;}
+.btn-green:active{background:var(--green2);}
+.btn-outline{background:var(--white);color:var(--gray6);border:1.5px solid var(--gray3);}
+.btn-outline:active{background:var(--gray1);}
+.btn-red{background:var(--white);color:var(--red);border:1.5px solid #ffcccc;}
+.btn-blue{background:var(--blue);color:#fff;}
+.btn-orange{background:var(--orange);color:#fff;}
+.btn-sm{padding:8px 13px;font-size:13px;}
+.btn-full{width:100%;}
+
+.badge{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:20px;}
+.badge-ok{background:var(--green-light);color:var(--green2);}
+.badge-warn{background:var(--orange-light);color:var(--orange);}
+.badge-danger{background:var(--red-light);color:var(--red);}
+.badge-blue{background:var(--blue-light);color:var(--blue);}
+.badge-gray{background:var(--gray2);color:var(--gray5);}
+
+.alert{border-radius:var(--radius-sm);padding:13px 14px;margin-bottom:12px;font-size:14px;display:flex;align-items:flex-start;gap:8px;line-height:1.5;}
+.alert-warn{background:var(--orange-light);color:var(--orange);border:1px solid #ffd4a8;}
+.alert-info{background:var(--blue-light);color:var(--blue);border:1px solid #b3ccf5;}
+.alert-danger{background:var(--red-light);color:var(--red);border:1px solid #ffcccc;}
+
+.stock-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.stock-card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;}
+.stock-name{font-size:14px;font-weight:700;color:var(--gray6);margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.stock-nums{display:flex;justify-content:space-between;gap:4px;}
+.sn{text-align:center;flex:1;}
+.sn-lbl{font-size:11px;color:var(--gray4);margin-bottom:3px;}
+.sn-val{font-size:17px;font-weight:800;}
+.sn-val.ok{color:var(--green);}
+.sn-val.low{color:var(--red);}
+.sn-val.mid{color:var(--orange);}
+.prog-bar{height:5px;background:var(--gray2);border-radius:3px;overflow:hidden;margin-top:10px;}
+.prog-fill{height:100%;border-radius:3px;background:var(--green);}
+.prog-fill.warn{background:var(--orange);}
+.prog-fill.danger{background:var(--red);}
+.prog-txt{font-size:12px;color:var(--gray4);text-align:right;margin-top:4px;}
+
+.list-item{display:flex;align-items:center;gap:13px;padding:14px 16px;border-bottom:1px solid var(--gray2);}
+.list-item:last-child{border-bottom:none;}
+.list-item:active{background:var(--gray1);}
+.li-icon{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.ig{background:var(--green-light);}
+.ib{background:var(--blue-light);}
+.io{background:var(--orange-light);}
+.ir{background:var(--red-light);}
+.li-body{flex:1;min-width:0;}
+.li-title{font-size:15px;font-weight:600;color:var(--gray6);}
+.li-sub{font-size:13px;color:var(--gray4);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.li-right{text-align:right;flex-shrink:0;}
+.li-val{font-size:16px;font-weight:800;color:var(--gray6);}
+
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.stat-box{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;text-align:center;}
+.stat-lbl{font-size:12px;color:var(--gray4);margin-bottom:5px;}
+.stat-val{font-size:22px;font-weight:800;color:var(--gray6);}
+.stat-val.g{color:var(--green);}
+.stat-val.o{color:var(--orange);}
+.stat-val.r{color:var(--red);}
+
+.sec-title{font-size:14px;font-weight:700;color:var(--gray5);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+
+.inner-tabs{display:flex;background:var(--gray1);border-radius:var(--radius);padding:3px;margin-bottom:14px;}
+.inner-tab{flex:1;text-align:center;padding:10px;font-size:14px;font-weight:700;color:var(--gray4);border-radius:8px;cursor:pointer;transition:all 0.15s;}
+.inner-tab.active{background:var(--white);color:var(--green);box-shadow:var(--shadow);}
+
+.req-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--gray2);}
+.req-item:last-child{border-bottom:none;}
+
+.yield-box{background:var(--gray1);border-radius:var(--radius-sm);padding:14px;text-align:center;margin-bottom:12px;min-height:48px;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--gray4);}
+.yield-big{font-size:28px;font-weight:800;}
+
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:flex-end;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal-sheet{background:var(--white);border-radius:20px 20px 0 0;width:100%;max-width:500px;padding:20px 20px 40px;max-height:90vh;overflow-y:auto;animation:sU 0.25s ease;}
+@keyframes sU{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:40px;height:4px;background:var(--gray3);border-radius:2px;margin:0 auto 20px;}
+.modal-title{font-size:18px;font-weight:800;color:var(--gray6);margin-bottom:18px;}
+
+.mt4{margin-top:4px;}.mt8{margin-top:8px;}.mt12{margin-top:12px;}.mt16{margin-top:16px;}
+.mb4{margin-bottom:4px;}.mb8{margin-bottom:8px;}.mb12{margin-bottom:12px;}
+.flex{display:flex;}.flex-between{display:flex;align-items:center;justify-content:space-between;}
+.gap8{gap:8px;}.gap12{gap:12px;}
+.empty{text-align:center;padding:40px 20px;color:var(--gray4);font-size:14px;}
+.empty-icon{font-size:44px;margin-bottom:10px;}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-logo">📦 재고관리</div>
+  <div class="login-sub">역할을 선택하세요</div>
+  <div class="role-list">
+    <div class="role-btn tazza" onclick="login('tazza')">
+      <div class="role-icon">🏭</div>
+      <div><div class="role-name">타짜 동아리</div><div class="role-desc">입고 · 출고 · 전체 모니터링</div></div>
+    </div>
+    <div class="role-btn ins" onclick="login('ins')">
+      <div class="role-icon">⚙️</div>
+      <div><div class="role-name">인소싱</div><div class="role-desc">원료 요청 · 생산 실적 입력</div></div>
+    </div>
+    <div class="role-btn lotto" onclick="login('lotto')">
+      <div class="role-icon">🎰</div>
+      <div><div class="role-name">동아리 로또</div><div class="role-desc">원료 요청 · 생산 실적 입력</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="app-screen">
+  <div class="app-header">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="header-title" id="hdr-title">재고관리</div>
+      <span class="header-badge" id="hdr-badge"></span>
+      <span id="sync-badge" style="display:none;font-size:11px;font-weight:600;"></span>
+    </div>
+    <button class="header-back" onclick="logout()">← 나가기</button>
+  </div>
+  <div class="app-body" id="app-body"></div>
+  <div class="bottom-nav" id="bottom-nav"></div>
+</div>
+
+<!-- 분할입고 모달 -->
+<div class="modal-bg" id="split-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="split-title">입고 처리</div>
+    <div id="split-info" style="background:var(--gray1);border-radius:var(--radius-sm);padding:13px;margin-bottom:16px;font-size:14px;color:var(--gray5);line-height:1.7;"></div>
+    <div class="form-group mb12">
+      <div class="form-label">입고량 (KG)</div>
+      <div class="input-wrap">
+        <input type="number" class="form-input has-unit" id="split-qty" placeholder="0" min="0" step="0.01" oninput="splitCalc()">
+        <span class="unit-label">KG</span>
+      </div>
+      <div id="split-warn" style="font-size:13px;color:var(--red);min-height:18px;margin-top:5px;"></div>
+    </div>
+    <div class="flex gap8 mb12">
+      <button class="btn btn-outline btn-full" id="s-btn-in" onclick="splitDo(false)">입고만</button>
+      <button class="btn btn-green btn-full" id="s-btn-io" onclick="splitDo(true)">입고 + 출고</button>
+    </div>
+    <button class="btn btn-outline btn-full" onclick="closeModal('split-modal')">취소</button>
+  </div>
+</div>
+
+<script>
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbxgCMZ6UfqW8SjjSxQ3evq16DFxDOCSnu24QECQGAcvhIAy2ascZofyTp3j9asut-A/exec';
+
+var DB={
+  materials:        [],
+  tazza_incoming:   [],
+  ins_dispatches:   [],
+  ins_productions:  [],
+  ins_products:     [],
+  ins_requests:     [],
+  lotto_dispatches: [],
+  lotto_productions:[],
+  lotto_products:   [],
+  lotto_requests:   [],
+};
+
+var _saving=false;
+function saveDB(){
+  // 로컬에도 백업
+  localStorage.setItem('v5_backup', JSON.stringify(DB));
+  if(_saving)return;
+  _saving=true;
+  showSyncBadge('저장중..','orange');
+  fetch(GAS_URL,{
+    method:'POST',
+    body:JSON.stringify({action:'save',db:DB})
+  }).then(function(r){return r.json();})
+  .then(function(res){
+    _saving=false;
+    if(res.ok) showSyncBadge('저장완료','green');
+    else showSyncBadge('저장실패','red');
+    setTimeout(function(){hideSyncBadge();},2000);
+  }).catch(function(){
+    _saving=false;
+    showSyncBadge('오프라인(로컬저장)','gray');
+    setTimeout(function(){hideSyncBadge();},3000);
+  });
+}
+
+function loadDB(callback){
+  showSyncBadge('불러오는중..','orange');
+  fetch(GAS_URL+'?action=load')
+  .then(function(r){return r.json();})
+  .then(function(data){
+    if(data && typeof data==='object' && data.materials){
+      Object.keys(data).forEach(function(k){ if(DB.hasOwnProperty(k)) DB[k]=data[k]; });
+      localStorage.setItem('v5_backup', JSON.stringify(DB));
+      showSyncBadge('연동완료','green');
+    } else {
+      // 구글에 데이터 없으면 로컬 백업 사용
+      var bk=localStorage.getItem('v5_backup');
+      if(bk){ var bd=JSON.parse(bk); Object.keys(bd).forEach(function(k){if(DB.hasOwnProperty(k))DB[k]=bd[k];}); }
+      showSyncBadge('새 데이터','green');
+    }
+    setTimeout(function(){hideSyncBadge();},2000);
+    if(callback)callback();
+  }).catch(function(){
+    // 오프라인 시 로컬 백업 사용
+    var bk=localStorage.getItem('v5_backup');
+    if(bk){ var bd=JSON.parse(bk); Object.keys(bd).forEach(function(k){if(DB.hasOwnProperty(k))DB[k]=bd[k];}); }
+    showSyncBadge('오프라인(로컬)','gray');
+    setTimeout(function(){hideSyncBadge();},3000);
+    if(callback)callback();
+  });
+}
+
+function showSyncBadge(msg,color){
+  var el=document.getElementById('sync-badge');
+  if(!el)return;
+  var colors={green:'var(--green)',orange:'var(--orange)',red:'var(--red)',gray:'var(--gray4)'};
+  el.textContent=msg;
+  el.style.color=colors[color]||colors.gray;
+  el.style.display='inline-block';
+}
+function hideSyncBadge(){
+  var el=document.getElementById('sync-badge');
+  if(el)el.style.display='none';
+}
+function uid(){return 'id_'+Date.now()+'_'+Math.floor(Math.random()*1e6);}
+function today(){return new Date().toISOString().slice(0,10);}
+function fd(d){return d?d.replace(/-/g,'.'):'−';}
+var ROLE=null,CUR_TAB=null;
+
+function getTazzaStock(mid){
+  var i=DB.tazza_incoming.reduce(function(s,x){return x.materialId===mid?s+x.qty:s;},0);
+  var io=DB.ins_dispatches.reduce(function(s,x){return x.materialId===mid?s+x.qty:s;},0);
+  var lo=DB.lotto_dispatches.reduce(function(s,x){return x.materialId===mid?s+x.qty:s;},0);
+  return parseFloat((i-io-lo).toFixed(3));
+}
+function getWhStock(wh,mid){
+  var d=DB[wh+'_dispatches'].reduce(function(s,x){return x.materialId===mid?s+x.qty:s;},0);
+  var p=DB[wh+'_productions'].filter(function(p){var dd=DB[wh+'_dispatches'].find(function(x){return x.id===p.dispatchId;});return dd&&dd.materialId===mid;}).reduce(function(s,p){return s+p.qty;},0);
+  return parseFloat((d-p).toFixed(3));
+}
+function getRemain(wh,d){
+  var p=DB[wh+'_productions'].filter(function(x){return x.dispatchId===d.id;}).reduce(function(s,x){return s+x.qty;},0);
+  return parseFloat((d.qty-p).toFixed(3));
+}
+function ystatus(v,mat){
+  if(!mat)return'warn';
+  if(v>=(mat.baseYield||100)*0.95)return'ok';
+  if(v>=(mat.minYield||0))return'warn';
+  return'danger';
+}
+function ylabel(s){return s==='ok'?'정상':s==='warn'?'주의':'경고';}
+function ycolor(s){return s==='ok'?'var(--green)':s==='warn'?'var(--orange)':'var(--red)';}
+
+var TNAV=[{id:'home',l:'홈',i:'🏠'},{id:'requests',l:'요청',i:'📋'},{id:'incoming',l:'입고',i:'📥'},{id:'materials',l:'원료',i:'🧪'}];
+var WNV=[{id:'home',l:'홈',i:'🏠'},{id:'request',l:'요청',i:'📝'},{id:'production',l:'생산',i:'⚙️'},{id:'products',l:'제품',i:'📦'}];
+
+function login(role){
+  ROLE=role;
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app-screen').classList.add('visible');
+  var tit={tazza:'타짜 동아리',ins:'인소싱',lotto:'동아리 로또'};
+  var bc={tazza:'badge-tazza',ins:'badge-ins',lotto:'badge-lotto'};
+  var bt={tazza:'관리자',ins:'인소싱',lotto:'로또'};
+  document.getElementById('hdr-title').textContent=tit[role];
+  var hb=document.getElementById('hdr-badge');hb.textContent=bt[role];hb.className='header-badge '+bc[role];
+  var tabs=role==='tazza'?TNAV:WNV;
+  document.getElementById('bottom-nav').innerHTML=tabs.map(function(t){
+    return '<button class="nav-btn" id="nb-'+t.id+'" onclick="goTab(\''+t.id+'\')">'
+      +'<div class="nav-icon">'+t.i+'</div><div class="nav-label">'+t.l+'</div></button>';
+  }).join('');
+  // 로딩 화면 표시 후 데이터 불러오기
+  document.getElementById('app-body').innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:16px;"><div style="font-size:36px;">⏳</div><div style="font-size:16px;font-weight:600;color:var(--gray5);">데이터 불러오는 중...</div><div style="font-size:13px;color:var(--gray4);">Google 스프레드시트 연동 중</div></div>';
+  loadDB(function(){
+    initFixedMaterials();
+    goTab('home');
+  });
+}
+function logout(){
+  ROLE=null;
+  // DB 초기화 (다음 로그인 시 새로 불러옴)
+  Object.keys(DB).forEach(function(k){DB[k]=[];});
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('app-screen').classList.remove('visible');
+}
+
+function goTab(id){
+  document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
+  var nb=document.getElementById('nb-'+id);if(nb)nb.classList.add('active');
+  CUR_TAB=id;
+  var body=document.getElementById('app-body');
+  if(ROLE==='tazza'){
+    if(id==='home')body.innerHTML=tazzaHome();
+    else if(id==='requests')body.innerHTML=tazzaRequests();
+    else if(id==='incoming')body.innerHTML=tazzaIncoming();
+    else if(id==='materials')body.innerHTML=tazzaMaterials();
+  } else {
+    if(id==='home')body.innerHTML=whHome();
+    else if(id==='request')body.innerHTML=whRequest();
+    else if(id==='production')body.innerHTML=whProduction();
+    else if(id==='products')body.innerHTML=whProducts();
+  }
+  body.scrollTop=0;
+}
+
+/* ── 타짜 홈 ── */
+function tazzaHome(){
+  var ap=DB.ins_productions.concat(DB.lotto_productions);
+  var ay=ap.length?(ap.reduce(function(s,p){return s+p.actualYield;},0)/ap.length).toFixed(1):'-';
+  var pi=DB.ins_requests.filter(function(r){return r.status==='pending';}).length;
+  var pl=DB.lotto_requests.filter(function(r){return r.status==='pending';}).length;
+  var pt=pi+pl;
+  var wn=ap.filter(function(p){var wh=DB.ins_productions.indexOf(p)>=0?'ins':'lotto';var d=DB[wh+'_dispatches'].find(function(x){return x.id===p.dispatchId;});var m=d?DB.materials.find(function(x){return x.id===d.materialId;}):null;return ystatus(p.actualYield,m)!=='ok';}).length;
+  var h='<div class="page">';
+  h+='<div class="stat-row">'
+    +'<div class="stat-box"><div class="stat-lbl">대기 요청</div><div class="stat-val '+(pt>0?'o':'g')+'">'+pt+'건</div></div>'
+    +'<div class="stat-box"><div class="stat-lbl">평균 수율</div><div class="stat-val '+(ay!=='-'&&parseFloat(ay)<80?'r':ay!=='-'&&parseFloat(ay)<90?'o':'g')+'">'+ay+(ay!=='-'?'%':'')+'</div></div>'
+    +'<div class="stat-box"><div class="stat-lbl">주의·경고</div><div class="stat-val '+(wn>0?'o':'g')+'">'+wn+'건</div></div>'
+    +'</div>';
+  h+='<div class="sec-title">⚙️ 인소싱 창고</div><div class="stock-grid">';
+  if(!DB.materials.length)h+='<div style="grid-column:1/-1" class="empty"><div class="empty-icon">📦</div>원료 없음</div>';
+  else DB.materials.forEach(function(m){h+=sCard(m.name,getWhStock('ins',m.id),DB.ins_dispatches.reduce(function(s,d){return d.materialId===m.id?s+d.qty:s;},0));});
+  h+='</div><div class="sec-title" style="margin-top:4px;">🎰 로또 창고</div><div class="stock-grid">';
+  if(!DB.materials.length)h+='<div style="grid-column:1/-1" class="empty"><div class="empty-icon">📦</div>원료 없음</div>';
+  else DB.materials.forEach(function(m){h+=sCard(m.name,getWhStock('lotto',m.id),DB.lotto_dispatches.reduce(function(s,d){return d.materialId===m.id?s+d.qty:s;},0));});
+  h+='</div>';
+  var rows=[];
+  DB.ins_productions.forEach(function(p){rows.push({p:p,wh:'ins'});});
+  DB.lotto_productions.forEach(function(p){rows.push({p:p,wh:'lotto'});});
+  rows.sort(function(a,b){return b.p.date.localeCompare(a.p.date);});
+  h+='<div class="sec-title" style="margin-top:4px;">📊 최근 생산</div><div class="card">';
+  if(!rows.length)h+='<div class="empty"><div class="empty-icon">📊</div>실적 없음</div>';
+  else rows.slice(0,8).forEach(function(r){
+    var p=r.p,wh=r.wh;
+    var d=DB[wh+'_dispatches'].find(function(x){return x.id===p.dispatchId;});
+    var mat=d?DB.materials.find(function(m){return m.id===d.materialId;}):null;
+    var st=ystatus(p.actualYield,mat);
+    h+='<div class="list-item"><div class="li-icon '+(wh==='ins'?'ib':'io')+'">'+(wh==='ins'?'⚙️':'🎰')+'</div>'
+      +'<div class="li-body"><div class="li-title">'+(mat?mat.name:'?')+'</div><div class="li-sub">'+fd(p.date)+' · '+(d?d.qty.toFixed(1):'-')+'KG 출고</div></div>'
+      +'<div class="li-right"><div class="li-val" style="color:'+ycolor(st)+'">'+p.actualYield+'%</div><span class="badge badge-'+st+'">'+ylabel(st)+'</span></div></div>';
+  });
+  h+='</div></div>';
+  return h;
+}
+
+function sCard(name,stock,total){
+  var cls=stock<=0?'low':stock<total*0.2?'mid':'ok';
+  var pct=total>0?Math.min(100,Math.round(stock/total*100)):0;
+  var pc=pct>=50?'':pct<=10?'danger':'warn';
+  return '<div class="stock-card"><div class="stock-name">'+name+'</div>'
+    +'<div class="stock-nums">'
+      +'<div class="sn"><div class="sn-lbl">사용가능</div><div class="sn-val '+cls+'">'+stock.toFixed(1)+'</div></div>'
+      +'<div class="sn"><div class="sn-lbl">누적출고</div><div class="sn-val">'+total.toFixed(1)+'</div></div>'
+    +'</div>'
+    +'<div class="prog-bar"><div class="prog-fill '+pc+'" style="width:'+pct+'%"></div></div>'
+    +'<div class="prog-txt">'+stock.toFixed(1)+' KG</div></div>';
+}
+
+/* ── 타짜 요청 ── */
+function tazzaRequests(){
+  var ins_pen = DB.ins_requests.filter(function(r){return r.status==='pending';});
+  var ins_don = DB.ins_requests.filter(function(r){return r.status==='done';});
+  var lot_pen = DB.lotto_requests.filter(function(r){return r.status==='pending';});
+  var lot_don = DB.lotto_requests.filter(function(r){return r.status==='done';});
+
+  var h='<div class="page">';
+  // 동아리 선택 탭
+  h+='<div class="inner-tabs">'
+    +'<div class="inner-tab active" id="it-ins" onclick="itab(\'ins\')">⚙️ 인소싱 '+(ins_pen.length>0?'<span style="background:var(--orange);color:#fff;border-radius:10px;font-size:11px;padding:1px 6px;margin-left:3px;">'+ins_pen.length+'</span>':'')+'</div>'
+    +'<div class="inner-tab" id="it-lotto" onclick="itab(\'lotto\')">🎰 로또 '+(lot_pen.length>0?'<span style="background:var(--orange);color:#fff;border-radius:10px;font-size:11px;padding:1px 6px;margin-left:3px;">'+lot_pen.length+'</span>':'')+'</div>'
+    +'</div>';
+
+  // 인소싱 뷰
+  h+='<div id="iv-ins">';
+  h+=reqTabView(ins_pen, ins_don, 'ins');
+  h+='</div>';
+
+  // 로또 뷰
+  h+='<div id="iv-lotto" style="display:none;">';
+  h+=reqTabView(lot_pen, lot_don, 'lotto');
+  h+='</div>';
+
+  h+='</div>';
+  return h;
+}
+
+function reqTabView(pen, don, wh){
+  var h='';
+  // 상태 서브탭
+  h+='<div style="display:flex;gap:8px;margin-bottom:14px;">'
+    +'<button class="btn btn-sm '+(pen.length?'btn-outline':'btn-outline')+'" id="st-'+wh+'-p" onclick="stab(\''+wh+'\',\'p\')" style="flex:1;border-color:var(--orange);color:var(--orange);">대기중 ('+pen.length+')</button>'
+    +'<button class="btn btn-sm btn-outline" id="st-'+wh+'-d" onclick="stab(\''+wh+'\',\'d\')" style="flex:1;">완료 ('+don.length+')</button>'
+    +'</div>';
+
+  // 대기중
+  h+='<div id="sv-'+wh+'-p">';
+  if(!pen.length){
+    h+='<div class="empty"><div class="empty-icon">✅</div>대기중인 요청 없음</div>';
+  } else {
+    pen.forEach(function(r){
+      h+='<div class="card" style="margin-bottom:12px;">';
+      h+='<div class="card-head"><div class="card-title">'+fd(r.date)+'</div></div>';
+      if(r.memo)h+='<div style="padding:4px 16px 0;font-size:13px;color:var(--gray4);">💬 '+r.memo+'</div>';
+      h+='<div class="card-body">';
+      r.items.forEach(function(item,idx){
+        var al=item.incomedQty||0,rm=item.qty-al,dn=rm<=0.001;
+        h+='<div style="background:var(--gray1);border-radius:var(--radius-sm);padding:13px;margin-bottom:8px;">'
+          +'<div class="flex-between mb8">'
+            +'<div style="font-size:16px;font-weight:700;">'+item.name+'</div>'
+            +'<span class="badge '+(dn?'badge-ok':'badge-warn')+'">'+(dn?'완료':al.toFixed(1)+' / '+item.qty.toFixed(1)+'KG')+'</span>'
+          +'</div>';
+        if(!dn){
+          h+='<div class="form-group mb8">'
+            +'<div class="form-label">입고량 (최대 '+rm.toFixed(2)+'KG)</div>'
+            +'<div class="input-wrap"><input type="number" class="form-input has-unit" id="sq-'+r.id+'-'+idx+'" placeholder="0" max="'+rm.toFixed(2)+'" step="0.01"><span class="unit-label">KG</span></div>'
+            +'</div>'
+            +'<div class="flex gap8">'
+              +'<button class="btn btn-outline btn-full btn-sm" onclick="openSplit(\''+r.id+'\',\''+wh+'\','+idx+')">입고</button>'
+              +'<button class="btn btn-green btn-full btn-sm" onclick="openSplit(\''+r.id+'\',\''+wh+'\','+idx+',true)">입고+출고</button>'
+            +'</div>';
+        }
+        h+='</div>';
+      });
+      var ad=r.items.every(function(i){return (i.incomedQty||0)>=i.qty-0.001;});
+      if(ad)h+='<button class="btn btn-green btn-full" onclick="closeReq(\''+r.id+'\',\''+wh+'\')">✓ 완료 처리</button>';
+      h+='</div></div>';
+    });
+  }
+  h+='</div>';
+
+  // 완료
+  h+='<div id="sv-'+wh+'-d" style="display:none;">';
+  if(!don.length){
+    h+='<div class="empty"><div class="empty-icon">📋</div>완료된 요청 없음</div>';
+  } else {
+    don.slice().sort(function(a,b){return b.date.localeCompare(a.date);}).forEach(function(r){
+      var is=r.items.map(function(i){return i.name+' '+i.qty.toFixed(1)+'KG';}).join(', ');
+      h+='<div class="card"><div class="list-item">'
+        +'<div class="li-icon ig">✅</div>'
+        +'<div class="li-body"><div class="li-title">'+fd(r.date)+'</div><div class="li-sub">'+is+'</div></div>'
+        +'<span class="badge badge-ok">완료</span>'
+        +'</div></div>';
+    });
+  }
+  h+='</div>';
+  return h;
+}
+
+function itab(wh){
+  document.getElementById('it-ins').className='inner-tab'+(wh==='ins'?' active':'');
+  document.getElementById('it-lotto').className='inner-tab'+(wh==='lotto'?' active':'');
+  document.getElementById('iv-ins').style.display=wh==='ins'?'block':'none';
+  document.getElementById('iv-lotto').style.display=wh==='lotto'?'block':'none';
+}
+
+function stab(wh, t){
+  document.getElementById('sv-'+wh+'-p').style.display=t==='p'?'block':'none';
+  document.getElementById('sv-'+wh+'-d').style.display=t==='d'?'block':'none';
+  document.getElementById('st-'+wh+'-p').style.borderColor=t==='p'?'var(--green)':'var(--gray3)';
+  document.getElementById('st-'+wh+'-p').style.color=t==='p'?'var(--green)':'var(--gray5)';
+  document.getElementById('st-'+wh+'-d').style.borderColor=t==='d'?'var(--green)':'var(--gray3)';
+  document.getElementById('st-'+wh+'-d').style.color=t==='d'?'var(--green)':'var(--gray5)';
+}
+
+var _sRid,_sWh,_sIdx,_sIo;
+function openSplit(rid,wh,idx,io){
+  _sRid=rid;_sWh=wh;_sIdx=idx;_sIo=!!io;
+  var req=DB[wh+'_requests'].find(function(r){return r.id===rid;});
+  var item=req.items[idx];
+  var al=item.incomedQty||0,rm=item.qty-al;
+  document.getElementById('split-title').textContent=(io?'입고 + 출고':'입고') + ' — '+item.name;
+  document.getElementById('split-info').innerHTML='요청량: <strong>'+item.qty.toFixed(2)+'KG</strong> &nbsp;|&nbsp; 기입고: <strong>'+al.toFixed(2)+'KG</strong><br>처리 가능 잔량: <strong style="color:var(--orange)">'+rm.toFixed(2)+'KG</strong>';
+  var sqEl=document.getElementById('sq-'+rid+'-'+idx);
+  document.getElementById('split-qty').value=sqEl?sqEl.value:'';
+  document.getElementById('split-warn').textContent='';
+  document.getElementById('s-btn-in').className='btn btn-'+(io?'outline':'green')+' btn-full';
+  document.getElementById('s-btn-io').className='btn btn-'+(io?'green':'outline')+' btn-full';
+  openModal('split-modal');
+}
+function splitCalc(){
+  var qty=parseFloat(document.getElementById('split-qty').value)||0;
+  var req=DB[_sWh+'_requests'].find(function(r){return r.id===_sRid;});
+  var item=req.items[_sIdx];
+  var rm=item.qty-(item.incomedQty||0);
+  document.getElementById('split-warn').textContent=qty>rm?'⚠ 잔량('+rm.toFixed(2)+'KG) 초과':'';
+}
+function splitDo(withOut){
+  var qty=parseFloat(document.getElementById('split-qty').value)||0;
+  var req=DB[_sWh+'_requests'].find(function(r){return r.id===_sRid;});
+  var item=req.items[_sIdx];
+  var rm=item.qty-(item.incomedQty||0);
+  if(!qty){alert('입고량을 입력하세요');return;}
+  if(qty>rm+0.001){alert('잔량 초과!');return;}
+  var wl=_sWh==='ins'?'인소싱':'로또';
+  DB.tazza_incoming.push({id:uid(),date:today(),materialId:item.materialId,qty:qty,note:'['+wl+'] 요청입고'});
+  if(withOut)DB[_sWh+'_dispatches'].push({id:uid(),date:today(),materialId:item.materialId,qty:qty,note:'요청출고'});
+  item.incomedQty=(item.incomedQty||0)+qty;
+  saveDB();closeModal('split-modal');goTab('requests');
+  alert((withOut?'입고+출고':'입고')+'완료!\n'+item.name+' '+qty.toFixed(2)+'KG → '+wl+' 창고');
+}
+function closeReq(rid,wh){
+  var req=DB[wh+'_requests'].find(function(r){return r.id===rid;});
+  if(!req||!confirm('완료 처리하시겠습니까?'))return;
+  req.status='done';saveDB();goTab('requests');
+}
+
+/* ── 타짜 입고 ── */
+function tazzaIncoming(){
+  var h='<div class="page"><div class="card"><div class="card-head"><div class="card-title">📥 원료 입고 등록</div></div><div class="card-body">';
+  h+='<div class="form-row"><div class="form-group"><div class="form-label">원료</div>'+mSel('in-mat',false)+'</div></div>';
+  h+='<div class="form-row">'
+    +'<div class="form-group"><div class="form-label">입고량</div><div class="input-wrap"><input type="number" class="form-input has-unit" id="in-qty" placeholder="0" min="0" step="0.01"><span class="unit-label">KG</span></div></div>'
+    +'<div class="form-group"><div class="form-label">날짜</div><input type="date" class="form-input" id="in-dt" value="'+today()+'"></div>'
+    +'</div>';
+  h+='<div class="form-row"><div class="form-group"><div class="form-label">비고</div><input type="text" class="form-input" id="in-note" placeholder="납품처 등"></div></div>';
+  h+='<button class="btn btn-green btn-full mt8" onclick="addIncoming()">+ 입고 등록</button></div></div>';
+  h+='<div class="sec-title">입고 내역</div><div class="card">';
+  var s=DB.tazza_incoming.slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+  if(!s.length)h+='<div class="empty"><div class="empty-icon">📥</div>입고 내역 없음</div>';
+  else s.forEach(function(i){
+    var m=DB.materials.find(function(x){return x.id===i.materialId;});
+    h+='<div class="list-item"><div class="li-icon ig">📥</div>'
+      +'<div class="li-body"><div class="li-title">'+(m?m.name:'?')+'</div><div class="li-sub">'+fd(i.date)+(i.note?' · '+i.note:'')+'</div></div>'
+      +'<div class="li-right"><div class="li-val">'+i.qty.toFixed(2)+'<span style="font-size:13px;color:var(--gray4)"> KG</span></div>'
+      +'<button class="btn btn-red btn-sm mt4" onclick="del(\'tazza_incoming\',\''+i.id+'\',\'incoming\')">삭제</button></div></div>';
+  });
+  h+='</div></div>';return h;
+}
+function addIncoming(){
+  var mid=document.getElementById('in-mat').value;
+  var qty=parseFloat(document.getElementById('in-qty').value)||0;
+  var dt=document.getElementById('in-dt').value||today();
+  var note=document.getElementById('in-note').value.trim();
+  if(!mid||!qty){alert('원료와 입고량을 입력하세요');return;}
+  DB.tazza_incoming.push({id:uid(),date:dt,materialId:mid,qty:qty,note:note});
+  saveDB();goTab('incoming');
+}
+
+/* ── 타짜 원료 ── */
+function tazzaMaterials(){
+  var h='<div class="page"><div class="card"><div class="card-head"><div class="card-title">🧪 원료 추가</div></div><div class="card-body">';
+  h+='<div class="form-row"><div class="form-group"><div class="form-label">원료명</div><input type="text" class="form-input" id="m-nm" placeholder="예: 원료A"></div></div>';
+  h+='<div class="form-row">'
+    +'<div class="form-group"><div class="form-label">기준 수율 (%)</div><input type="number" class="form-input" id="m-y" placeholder="90"></div>'
+    +'<div class="form-group"><div class="form-label">최소 허용 (%)</div><input type="number" class="form-input" id="m-mn" placeholder="80"></div>'
+    +'</div>';
+  h+='<button class="btn btn-green btn-full mt8" onclick="addMat()">+ 원료 추가</button></div></div>';
+  h+='<div class="sec-title">등록 원료</div><div class="card">';
+  if(!DB.materials.length)h+='<div class="empty"><div class="empty-icon">🧪</div>원료 없음</div>';
+  else DB.materials.forEach(function(m){
+    var ts=getTazzaStock(m.id),is=getWhStock('ins',m.id),ls=getWhStock('lotto',m.id);
+    h+='<div class="list-item"><div class="li-icon ig">🧪</div>'
+      +'<div class="li-body"><div class="li-title">'+m.name+(m.fixed?' <span class="badge badge-ok" style="font-size:10px;">기본</span>':'')+'</div>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:5px;">'
+        +'<span class="badge badge-gray">공용 '+ts.toFixed(1)+'KG</span>'
+        +'<span class="badge badge-blue">인소싱 '+is.toFixed(1)+'KG</span>'
+        +'<span class="badge badge-warn">로또 '+ls.toFixed(1)+'KG</span>'
+      +'</div></div>'
+      +(m.fixed
+        ? '<span style="font-size:12px;color:var(--gray4);">고정</span>'
+        : '<button class="btn btn-red btn-sm" onclick="del(\'materials\',\''+m.id+'\',\'materials\')">삭제</button>'
+      )+'</div>';
+  });
+  h+='</div></div>';return h;
+}
+function addMat(){
+  var nm=document.getElementById('m-nm').value.trim();
+  if(!nm){alert('원료명을 입력하세요');return;}
+  if(DB.materials.find(function(m){return m.name===nm;})){alert('이미 등록됨');return;}
+  DB.materials.push({id:uid(),name:nm,baseYield:parseFloat(document.getElementById('m-y').value)||0,minYield:parseFloat(document.getElementById('m-mn').value)||0});
+  saveDB();goTab('materials');
+}
+
+/* ── 창고 홈 ── */
+function whHome(){
+  var wh=ROLE,wl=wh==='ins'?'인소싱':'로또';
+  var pn=DB[wh+'_requests'].filter(function(r){return r.status==='pending';}).length;
+  var h='<div class="page">';
+  if(pn>0)h+='<div class="alert alert-info">📬 대기중인 요청 '+pn+'건 — 타짜 처리 예정</div>';
+  h+='<div class="sec-title">'+wl+' 창고 재고</div><div class="stock-grid">';
+  if(!DB.materials.length)h+='<div style="grid-column:1/-1" class="empty"><div class="empty-icon">📦</div>원료 없음</div>';
+  else DB.materials.forEach(function(m){h+=sCard(m.name,getWhStock(wh,m.id),DB[wh+'_dispatches'].reduce(function(s,d){return d.materialId===m.id?s+d.qty:s;},0));});
+  h+='</div><div class="sec-title" style="margin-top:4px;">진행 현황</div><div class="card">';
+  var ds=DB[wh+'_dispatches'];
+  if(!ds.length)h+='<div class="empty"><div class="empty-icon">📊</div>출고 내역 없음</div>';
+  else ds.slice().sort(function(a,b){return b.date.localeCompare(a.date);}).forEach(function(d){
+    var m=DB.materials.find(function(x){return x.id===d.materialId;});
+    var rm=getRemain(wh,d),pr=parseFloat((d.qty-rm).toFixed(2));
+    var pct=Math.min(100,Math.round(pr/d.qty*100)),dn=rm<=0.001;
+    var pc=pct>=95?'':pct<=20?'danger':'warn';
+    h+='<div class="list-item"><div class="li-icon '+(dn?'ig':'ib')+'">'+(dn?'✅':'📦')+'</div>'
+      +'<div class="li-body" style="flex:1"><div class="li-title">'+(m?m.name:'?')+'</div>'
+      +'<div class="li-sub">'+fd(d.date)+' · 출고 '+d.qty.toFixed(1)+'KG</div>'
+      +'<div class="prog-bar" style="margin-top:8px;"><div class="prog-fill '+pc+'" style="width:'+pct+'%"></div></div>'
+      +'<div class="prog-txt">'+pr.toFixed(1)+' / '+d.qty.toFixed(1)+' KG ('+pct+'%)'+(dn?' <b style="color:var(--green)">완료</b>':'')+'</div>'
+      +'</div></div>';
+  });
+  h+='</div></div>';return h;
+}
+
+/* ── 창고 요청 ── */
+var _ri=[];
+function whRequest(){
+  var wh=ROLE,rk=wh+'_requests';
+  var h='<div class="page"><div class="card"><div class="card-head"><div class="card-title">📝 원료 요청 작성</div></div><div class="card-body">';
+  h+='<div class="form-row">'
+    +'<div class="form-group"><div class="form-label">원료</div>'+mSel('rq-mat',false)+'</div>'
+    +'<div class="form-group"><div class="form-label">요청량</div><div class="input-wrap"><input type="number" class="form-input has-unit" id="rq-qty" placeholder="0" min="0" step="0.01"><span class="unit-label">KG</span></div></div>'
+    +'</div>';
+  h+='<button class="btn btn-outline btn-full" onclick="addRI()">+ 항목 추가</button>';
+  if(_ri.length){
+    h+='<div class="card-divider"></div><div class="sec-title" style="margin-bottom:8px;">추가 목록</div>';
+    _ri.forEach(function(r,i){
+      h+='<div class="req-item"><div style="flex:1"><div style="font-size:15px;font-weight:700;">'+r.name+'</div><div style="font-size:13px;color:var(--gray4);">'+r.qty.toFixed(2)+' KG</div></div>'
+        +'<button class="btn btn-red btn-sm" onclick="rmRI('+i+')">✕</button></div>';
+    });
+    h+='<div class="form-group mt12"><div class="form-label">메모 (선택)</div><input type="text" class="form-input" id="rq-memo" placeholder="긴급, 납기일 등"></div>';
+    h+='<button class="btn btn-green btn-full mt12" onclick="subReq()">✉ 요청서 제출</button>';
+  }
+  h+='</div></div>';
+  h+='<div class="sec-title">요청 내역</div><div class="card">';
+  var rs=DB[rk].slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+  if(!rs.length)h+='<div class="empty"><div class="empty-icon">📝</div>요청 없음</div>';
+  else rs.forEach(function(r){
+    var is=r.items.map(function(x){return x.name+' '+x.qty.toFixed(1)+'KG';}).join(', ');
+    var dn=r.status==='done';
+    h+='<div class="list-item"><div class="li-icon '+(dn?'ig':'io')+'">'+(dn?'✅':'📋')+'</div>'
+      +'<div class="li-body"><div class="li-title">'+fd(r.date)+(r.memo?' · '+r.memo:'')+'</div><div class="li-sub">'+is+'</div></div>'
+      +'<div class="li-right"><span class="badge badge-'+(dn?'ok':'warn')+'">'+(dn?'완료':'대기')+'</span>'
+      +(dn?'':'<br><button class="btn btn-red btn-sm mt4" onclick="delReq(\''+r.id+'\')">삭제</button>')+'</div></div>';
+  });
+  h+='</div></div>';return h;
+}
+function addRI(){
+  var mid=document.getElementById('rq-mat').value,qty=parseFloat(document.getElementById('rq-qty').value)||0;
+  if(!mid){alert('원료를 선택하세요');return;}if(!qty){alert('요청량을 입력하세요');return;}
+  var m=DB.materials.find(function(x){return x.id===mid;});
+  var ex=_ri.find(function(r){return r.materialId===mid;});
+  if(ex)ex.qty+=qty;else _ri.push({materialId:mid,name:m?m.name:'?',qty:qty});
+  document.getElementById('rq-qty').value='';document.getElementById('rq-mat').value='';
+  goTab('request');
+}
+function rmRI(i){_ri.splice(i,1);goTab('request');}
+function subReq(){
+  if(!_ri.length){alert('원료를 추가하세요');return;}
+  var memo=document.getElementById('rq-memo')?document.getElementById('rq-memo').value.trim():'';
+  DB[ROLE+'_requests'].push({id:uid(),date:today(),items:_ri.slice(),memo:memo,status:'pending'});
+  saveDB();_ri=[];alert('요청서 제출!\n타짜에서 확인 후 입고 처리됩니다.');goTab('request');
+}
+function delReq(rid){
+  if(!confirm('삭제하시겠습니까?'))return;
+  DB[ROLE+'_requests']=DB[ROLE+'_requests'].filter(function(r){return r.id!==rid;});
+  saveDB();goTab('request');
+}
+
+/* ── 창고 생산 ── */
+function whProduction(){
+  var wh=ROLE;
+  var av=DB[wh+'_dispatches'].filter(function(d){return getRemain(wh,d)>0.001;});
+  var pk=wh+'_products';
+  var h='<div class="page"><div class="card"><div class="card-head"><div class="card-title">⚙️ 생산 실적 등록</div></div><div class="card-body">';
+  h+='<div class="alert alert-info mb12">ℹ 내 창고 원료만 사용 가능합니다</div>';
+
+  // 날짜 + 출고건
+  h+='<div class="form-row">'
+    +'<div class="form-group"><div class="form-label">날짜</div><input type="date" class="form-input" id="p-dt" value="'+today()+'"></div>'
+    +'<div class="form-group"><div class="form-label">출고 건 (원료)</div><select class="form-input" id="p-disp" onchange="onDC()">'
+    +'<option value="">선택</option>'
+    +av.map(function(d){var m=DB.materials.find(function(x){return x.id===d.materialId;});return '<option value="'+d.id+'">'+(m?m.name:'?')+' — 잔량 '+getRemain(wh,d).toFixed(1)+'KG</option>';}).join('')
+    +'</select></div></div>';
+  h+='<div id="d-info" class="yield-box mb8" style="font-size:14px;">출고 건을 선택하세요</div>';
+
+  // 제품명 + 제품 g수
+  h+='<div class="form-row">'
+    +'<div class="form-group"><div class="form-label">제품명 *</div>'
+    +'<select class="form-input" id="p-product" onchange="onProductChange()">'
+    +'<option value="">제품 선택 (또는 직접입력)</option>'
+    +DB[pk].map(function(p){return '<option value="'+p.id+'" data-w="'+p.weight+'">'+p.name+' ('+p.weight.toFixed(0)+'g)</option>';}).join('')
+    +'</select></div>'
+    +'<div class="form-group"><div class="form-label">제품명 직접입력</div>'
+    +'<input type="text" class="form-input" id="p-prodname" placeholder="직접 입력 시 여기에"></div>'
+    +'</div>';
+  h+='<div class="form-row">'
+    +'<div class="form-group"><div class="form-label">제품 g수 *</div>'
+    +'<div class="input-wrap"><input type="number" class="form-input has-unit" id="p-gram" placeholder="예: 500" min="0" step="0.1" oninput="calcBagWeight()"><span class="unit-label">g</span></div></div>'
+    +'<div class="form-group"><div class="form-label">투입량 (KG) *</div>'
+    +'<div class="input-wrap"><input type="number" class="form-input has-unit" id="p-input" placeholder="0" min="0" step="0.01" oninput="calcY()"><span class="unit-label">KG</span></div></div>'
+    +'</div>';
+
+  // 봉 생산량 + 생산량(자동)
+  h+='<div class="form-row">'
+    +'<div class="form-group"><div class="form-label">봉 생산량 *</div>'
+    +'<div class="input-wrap"><input type="number" class="form-input has-unit" id="p-bags" placeholder="0" min="0" oninput="calcBagWeight()"><span class="unit-label">봉</span></div></div>'
+    +'<div class="form-group"><div class="form-label">생산량 KG (자동계산)</div>'
+    +'<div class="input-wrap"><input type="number" class="form-input has-unit" id="p-qty" placeholder="자동" min="0" step="0.01" oninput="calcY()"><span class="unit-label">KG</span></div></div>'
+    +'</div>';
+  h+='<div id="bag-info" style="font-size:13px;color:var(--gray4);margin-bottom:10px;min-height:18px;"></div>';
+
+  h+='<div id="y-prev" class="yield-box mb12">투입량 입력 시 수율 자동 계산</div>';
+  h+='<div class="form-row"><div class="form-group"><div class="form-label">비고</div><input type="text" class="form-input" id="p-note" placeholder="특이사항"></div></div>';
+  h+='<button class="btn btn-green btn-full" onclick="addProd()">+ 실적 등록</button></div></div>';
+
+  // 실적 내역
+  h+='<div class="sec-title">실적 내역 <button class="btn btn-outline btn-sm" onclick="expXl()">↓ 엑셀</button></div><div class="card">';
+  var ps=DB[wh+'_productions'].slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+  if(!ps.length)h+='<div class="empty"><div class="empty-icon">⚙️</div>실적 없음</div>';
+  else ps.forEach(function(p){
+    var d=DB[wh+'_dispatches'].find(function(x){return x.id===p.dispatchId;});
+    var m=d?DB.materials.find(function(x){return x.id===d.materialId;}):null;
+    var st=ystatus(p.actualYield,m);
+    var pnm=p.productName||'-';
+    h+='<div class="list-item"><div class="li-icon ib">⚙️</div>'
+      +'<div class="li-body">'
+        +'<div class="li-title">'+pnm+(p.gram?' <span style="font-size:12px;color:var(--gray4);">('+p.gram+'g)</span>':'')+'</div>'
+        +'<div class="li-sub">'+fd(p.date)+' · 원료 '+(m?m.name:'?')+' · 투입 '+p.inputQty.toFixed(2)+'KG</div>'
+        +'<div class="li-sub">생산 '+p.qty.toFixed(2)+'KG · '+(p.bags?p.bags+'봉 · ':'')+' 수율 <b style="color:'+ycolor(st)+'">'+p.actualYield+'%</b></div>'
+      +'</div>'
+      +'<div class="li-right">'
+        +'<span class="badge badge-'+st+'">'+ylabel(st)+'</span><br>'
+        +'<button class="btn btn-red btn-sm mt4" onclick="del(\''+wh+'_productions\',\''+p.id+'\',\'production\')">삭제</button>'
+      +'</div></div>';
+  });
+  h+='</div></div>';return h;
+}
+
+function onProductChange(){
+  var sel=document.getElementById('p-product');
+  var opt=sel.options[sel.selectedIndex];
+  if(opt&&opt.value){
+    document.getElementById('p-prodname').value='';
+    var w=parseFloat(opt.getAttribute('data-w'))||0;
+    if(w) document.getElementById('p-gram').value=w.toFixed(1);
+    calcBagWeight();
+  }
+}
+
+function calcBagWeight(){
+  var bags=parseInt(document.getElementById('p-bags').value)||0;
+  var gram=parseFloat(document.getElementById('p-gram').value)||0;
+  var info=document.getElementById('bag-info');
+  if(bags>0&&gram>0){
+    var kg=(bags*gram/1000);
+    document.getElementById('p-qty').value=kg.toFixed(3);
+    info.textContent='봉 생산량 × g수 = '+bags+'봉 × '+gram+'g = '+kg.toFixed(3)+' KG (자동입력됨)';
+    calcY();
+  } else {
+    info.textContent='';
+  }
+}
+function onDC(){
+  var wh=ROLE,did=document.getElementById('p-disp').value,el=document.getElementById('d-info');
+  if(!did){el.textContent='출고 건을 선택하세요';el.style.color='';return;}
+  var d=DB[wh+'_dispatches'].find(function(x){return x.id===did;});
+  var rm=getRemain(wh,d),pr=parseFloat((d.qty-rm).toFixed(2));
+  el.innerHTML='출고 <b>'+d.qty.toFixed(2)+'KG</b> | 완료 <b>'+pr+'KG</b> | <b style="color:var(--orange)">잔량 '+rm.toFixed(2)+'KG</b>';
+}
+function calcY(){
+  var wh=ROLE,did=document.getElementById('p-disp').value;
+  var iq=parseFloat(document.getElementById('p-input').value)||0;
+  var pq=parseFloat(document.getElementById('p-qty').value)||0;
+  var el=document.getElementById('y-prev');
+  if(!did||!iq){el.textContent='투입량 입력 시 수율 자동 계산';return;}
+  var d=DB[wh+'_dispatches'].find(function(x){return x.id===did;});
+  var rm=getRemain(wh,d);
+  if(iq>rm+0.001){el.innerHTML='<span style="color:var(--red)">⚠ 투입량이 잔량('+rm.toFixed(2)+'KG) 초과</span>';return;}
+  // 수율 = 생산량 / 투입량
+  var useQty=pq>0?pq:iq;
+  var y=(useQty/iq*100).toFixed(1);
+  var m=DB.materials.find(function(x){return x.id===d.materialId;}),st=ystatus(parseFloat(y),m);
+  el.innerHTML='수율 <span class="yield-big" style="color:'+ycolor(st)+'">'+y+'%</span> &nbsp;<span class="badge badge-'+st+'">'+ylabel(st)+'</span>';
+}
+function addProd(){
+  var wh=ROLE,dt=document.getElementById('p-dt').value||today();
+  var did=document.getElementById('p-disp').value;
+  var inputQty=parseFloat(document.getElementById('p-input').value)||0;
+  var qty=parseFloat(document.getElementById('p-qty').value)||0;
+  var bags=parseInt(document.getElementById('p-bags').value)||0;
+  var gram=parseFloat(document.getElementById('p-gram').value)||0;
+  var note=document.getElementById('p-note').value.trim();
+  // 제품명: 드롭다운 우선, 없으면 직접입력
+  var selEl=document.getElementById('p-product');
+  var productName='';
+  if(selEl.value){
+    productName=selEl.options[selEl.selectedIndex].text.replace(/\s*\(\d+g\)$/,'');
+  } else {
+    productName=document.getElementById('p-prodname').value.trim();
+  }
+  if(!did){alert('출고 건을 선택하세요');return;}
+  if(!inputQty){alert('투입량을 입력하세요');return;}
+  if(!productName){alert('제품명을 입력하세요');return;}
+  if(!gram){alert('제품 g수를 입력하세요');return;}
+  if(!bags){alert('봉 생산량을 입력하세요');return;}
+  var d=DB[wh+'_dispatches'].find(function(x){return x.id===did;});
+  var rm=getRemain(wh,d);
+  if(inputQty>rm+0.001){alert('투입량 초과!\n사용 가능: '+rm.toFixed(2)+'KG');return;}
+  // 생산량 = 봉×g수 (자동계산값 우선, 없으면 직접입력값)
+  var finalQty=qty>0?qty:(bags*gram/1000);
+  var actualYield=parseFloat((finalQty/inputQty*100).toFixed(2));
+  DB[wh+'_productions'].push({
+    id:uid(),date:dt,dispatchId:did,
+    productName:productName,gram:gram,
+    inputQty:inputQty,qty:finalQty,bags:bags,
+    actualYield:actualYield,note:note
+  });
+  saveDB();goTab('production');
+}
+function expXl(){
+  var wh=ROLE;
+  var rows=[['날짜','제품명','g수','원료','투입량(KG)','생산량(KG)','봉수','수율(%)','상태','비고']];
+  DB[wh+'_productions'].slice().sort(function(a,b){return b.date.localeCompare(a.date);}).forEach(function(p){
+    var d=DB[wh+'_dispatches'].find(function(x){return x.id===p.dispatchId;});
+    var m=d?DB.materials.find(function(x){return x.id===d.materialId;}):null;
+    var st=ystatus(p.actualYield,m);
+    rows.push([p.date,p.productName||'',p.gram||'',m?m.name:'?',(p.inputQty||p.qty).toFixed(2),p.qty.toFixed(2),p.bags||0,p.actualYield,ylabel(st),p.note||'']);
+  });
+  var csv='\uFEFF'+rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\r\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download='생산실적_'+today()+'.csv';a.click();
+}
+
+/* ── 창고 제품 ── */
+function whProducts(){
+  var wh=ROLE,pk=wh+'_products',wl=wh==='ins'?'인소싱':'로또';
+  var h='<div class="page"><div class="card"><div class="card-head"><div class="card-title">📦 제품 추가</div></div><div class="card-body">';
+  h+='<div class="form-row">'
+    +'<div class="form-group"><div class="form-label">제품명 *</div><input type="text" class="form-input" id="pr-nm" placeholder="예: 제품A"></div>'
+    +'<div class="form-group"><div class="form-label">중량 (g) *</div><div class="input-wrap"><input type="number" class="form-input has-unit" id="pr-wt" placeholder="500" min="0" step="0.1"><span class="unit-label">g</span></div></div>'
+    +'</div>';
+  h+='<div class="form-row">'
+    +'<div class="form-group"><div class="form-label">연결 원료</div>'+mSel('pr-mat',true)+'</div>'
+    +'<div class="form-group"><div class="form-label">비고</div><input type="text" class="form-input" id="pr-note" placeholder="규격 등"></div>'
+    +'</div>';
+  h+='<button class="btn btn-green btn-full mt8" onclick="addPr()">+ 제품 추가</button></div></div>';
+  h+='<div class="sec-title">'+wl+' 제품 목록</div><div class="card">';
+  if(!DB[pk].length)h+='<div class="empty"><div class="empty-icon">📦</div>제품 없음</div>';
+  else DB[pk].forEach(function(p){
+    var m=p.materialId?DB.materials.find(function(x){return x.id===p.materialId;}):null;
+    h+='<div class="list-item"><div class="li-icon ib">📦</div>'
+      +'<div class="li-body"><div class="li-title">'+p.name+'</div><div class="li-sub">'+p.weight.toFixed(1)+'g'+(m?' · '+m.name:'')+(p.note?' · '+p.note:'')+'</div></div>'
+      +'<button class="btn btn-red btn-sm" onclick="del(\''+pk+'\',\''+p.id+'\',\'products\')">삭제</button></div>';
+  });
+  h+='</div></div>';return h;
+}
+function addPr(){
+  var wh=ROLE,nm=document.getElementById('pr-nm').value.trim(),wt=parseFloat(document.getElementById('pr-wt').value)||0;
+  if(!nm||!wt){alert('제품명과 중량을 입력하세요');return;}
+  var pk=wh+'_products';
+  if(DB[pk].find(function(p){return p.name===nm;})){alert('이미 등록됨');return;}
+  DB[pk].push({id:uid(),name:nm,weight:wt,materialId:document.getElementById('pr-mat').value||null,note:document.getElementById('pr-note').value.trim()});
+  saveDB();goTab('products');
+}
+
+/* ── 공통 ── */
+function mSel(id,opt){
+  return '<select class="form-input" id="'+id+'">'
+    +(opt?'<option value="">선택 안함</option>':'<option value="">원료 선택</option>')
+    +DB.materials.map(function(m){return '<option value="'+m.id+'">'+m.name+'</option>';}).join('')
+    +'</select>';
+}
+function del(key,id,tab){
+  // 고정 원료는 삭제 불가
+  if(key==='materials'){
+    var m=DB.materials.find(function(x){return x.id===id;});
+    if(m&&m.fixed){alert('기본 원료는 삭제할 수 없습니다.');return;}
+  }
+  if(!confirm('삭제하시겠습니까?'))return;
+  DB[key]=DB[key].filter(function(x){return x.id!==id;});
+  saveDB();goTab(tab);
+}
+
+// 고정 원료 자동 등록
+var FIXED_MATERIALS=['날개','통다리','가슴살','안심','통날개','윙','봉','통정육','북채','사이정육'];
+function initFixedMaterials(){
+  var changed=false;
+  FIXED_MATERIALS.forEach(function(nm){
+    if(!DB.materials.find(function(m){return m.name===nm;})){
+      DB.materials.push({id:uid(),name:nm,baseYield:0,minYield:0,fixed:true});
+      changed=true;
+    }
+  });
+  if(changed)saveDB();
+}
+initFixedMaterials();
+
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-bg').forEach(function(el){
+  el.addEventListener('click',function(e){if(e.target===el)el.classList.remove('open');});
+});
+</script>
+</body>
+</html>
